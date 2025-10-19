@@ -8,7 +8,7 @@ import {
   TrendingUp,
   Users,
   PieChart,
-  Scatter,
+  BarChart3,
   AlertCircle,
   RefreshCw,
   Filter,
@@ -464,7 +464,7 @@ const RiskAversionAnalyticsPage: React.FC = () => {
               }}>
                 Risk Range
               </h3>
-              <Scatter size={20} color="#f59e0b" />
+              <BarChart3 size={20} color="#f59e0b" />
             </div>
             <p style={{
               fontSize: '1.25rem',
@@ -593,7 +593,7 @@ const RiskAversionAnalyticsPage: React.FC = () => {
             alignItems: 'center',
             gap: '0.5rem'
           }}>
-            <Scatter size={24} />
+            <BarChart3 size={24} />
             Risk Aversion Scatter Plot
           </h3>
           
