@@ -21,12 +21,17 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import { Question } from '../../../types/forms';
 
 const AdminNewFormPage: React.FC = () => {
   const router = useRouter();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    title: string;
+    description: string;
+    questions: Question[];
+  }>({
     title: '',
     description: '',
     questions: []
@@ -78,10 +83,16 @@ const AdminNewFormPage: React.FC = () => {
       return;
     }
 
-    const question = {
+    const question: Question = {
       id: Date.now().toString(),
-      ...newQuestion,
-      order: formData.questions.length + 1
+      formId: '', // Will be set when form is saved
+      type: newQuestion.type as Question['type'],
+      text: newQuestion.text,
+      required: newQuestion.required,
+      options: newQuestion.options || [],
+      orderIndex: formData.questions.length + 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
 
     setFormData({
