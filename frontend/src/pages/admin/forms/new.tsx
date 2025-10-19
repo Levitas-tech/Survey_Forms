@@ -37,7 +37,12 @@ const AdminNewFormPage: React.FC = () => {
     questions: []
   });
   const [showQuestionModal, setShowQuestionModal] = useState(false);
-  const [newQuestion, setNewQuestion] = useState({
+  const [newQuestion, setNewQuestion] = useState<{
+    text: string;
+    type: string;
+    required: boolean;
+    options: string[];
+  }>({
     text: '',
     type: 'text',
     required: false,
