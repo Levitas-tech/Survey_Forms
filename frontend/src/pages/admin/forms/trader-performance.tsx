@@ -111,7 +111,7 @@ const TraderPerformanceSurveyPage: React.FC = () => {
     toast('Preview functionality coming soon!');
   };
 
-  const handleUpdateTrader = (traderId: string, field: keyof TraderPerformance, value: any) => {
+  const handleUpdateTrader = (traderId: string, field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
       questions: prev.questions.map(q => 
@@ -560,8 +560,8 @@ const TraderPerformanceSurveyPage: React.FC = () => {
                             </label>
                             <input
                               type="text"
-                              value={trader.name}
-                              onChange={(e) => handleUpdateTrader(trader.id, 'name', e.target.value)}
+                              value={trader.traderName}
+                              onChange={(e) => handleUpdateTrader(trader.id, 'traderName', e.target.value)}
                               style={{
                                 width: '100%',
                                 padding: '8px 12px',

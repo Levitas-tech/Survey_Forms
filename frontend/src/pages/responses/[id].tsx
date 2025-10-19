@@ -13,11 +13,11 @@ import {
   BarChart,
   Trash2
 } from 'lucide-react';
-import { useAuth } from '../../../contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../../services/api';
-import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
-import { formatDate } from '../../../lib/utils';
+import { api } from '@/services/api';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 interface Answer {

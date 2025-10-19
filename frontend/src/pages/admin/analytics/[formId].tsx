@@ -14,10 +14,10 @@ import {
   Filter,
   Eye
 } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../../services/api';
-import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { api } from '@/services/api';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 interface RiskAversionAnalysis {
   userId: string;

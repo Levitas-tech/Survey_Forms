@@ -13,11 +13,11 @@ import {
   Star,
   AlertCircle
 } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../services/api';
+import { api } from '@/services/api';
 import toast from 'react-hot-toast';
-import { calculateMoneyReturns, formatMoney } from '../../../../data/traderPerformanceData';
+import { calculateMoneyReturns, formatMoney } from '@/data/traderPerformanceData';
 
 interface TraderQuestion {
   id: string;
