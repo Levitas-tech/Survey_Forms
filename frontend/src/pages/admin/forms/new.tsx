@@ -94,7 +94,15 @@ const AdminNewFormPage: React.FC = () => {
       type: newQuestion.type as Question['type'],
       text: newQuestion.text,
       required: newQuestion.required,
-      options: newQuestion.options || [],
+      options: (newQuestion.options || []).map((optionText, index) => ({
+        id: `${Date.now()}-${index}`,
+        questionId: '',
+        text: optionText,
+        value: optionText.toLowerCase().replace(/\s+/g, '-'),
+        orderIndex: index,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      })),
       orderIndex: formData.questions.length + 1,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
