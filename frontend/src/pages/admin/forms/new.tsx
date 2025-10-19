@@ -59,7 +59,7 @@ const AdminNewFormPage: React.FC = () => {
 
   const handlePreview = () => {
     // TODO: Implement form preview
-    toast.info('Preview functionality coming soon!');
+    toast('Preview functionality coming soon!');
   };
 
   const handleAddQuestion = () => {
