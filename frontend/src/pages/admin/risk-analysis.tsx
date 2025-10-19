@@ -122,14 +122,14 @@ export default function RiskAnalysisPage() {
 
     const results: RiskAnalysisResult[] = [];
 
-    for (const [userId, userResponseList] of userResponses) {
+    for (const [userId, userResponseList] of Array.from(userResponses.entries())) {
       // Get user info
       const userInfo = userResponseList[0].user;
       
       // Extract trader performance responses (ratings 1-10)
       const traderResponses: number[] = [];
       
-      userResponseList.forEach(response => {
+      userResponseList.forEach((response: any) => {
         response.answers?.forEach((answer: any) => {
           if (answer.question?.config?.traderPerformance && answer.value) {
             const rating = parseInt(answer.value);
@@ -155,7 +155,7 @@ export default function RiskAnalysisPage() {
       const features: number[] = [];
       const targets: number[] = [];
 
-      userResponseList.forEach(response => {
+      userResponseList.forEach((response: any) => {
         response.answers?.forEach((answer: any) => {
           if (answer.question?.config?.traderPerformance && answer.value) {
             const rating = parseInt(answer.value);

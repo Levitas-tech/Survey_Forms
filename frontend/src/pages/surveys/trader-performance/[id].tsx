@@ -129,7 +129,7 @@ const TraderPerformanceSurveyPage: React.FC = () => {
     if (!form) return;
 
     // Validate that all questions are answered
-    const unansweredQuestions = form.questions.filter(q => !answers[q.id]);
+    const unansweredQuestions = form.questions.filter((q: any) => !answers[q.id]);
     if (unansweredQuestions.length > 0) {
       toast.error('Please rate all traders before submitting');
       return;
@@ -550,10 +550,10 @@ const TraderPerformanceSurveyPage: React.FC = () => {
           {/* Questions */}
           <div style={{ padding: '2rem' }}>
             {form.questions?.length > 0 ? (
-              <div style={{ space: '2rem' }}>
+              <div style={{ gap: '2rem', display: 'flex', flexDirection: 'column' }}>
                 {form.questions
-                  .sort((a, b) => a.order - b.order)
-                  .map((trader, index) => {
+                  .sort((a: any, b: any) => a.order - b.order)
+                  .map((trader: any, index: number) => {
                     const moneyReturns = calculateMoneyReturns(trader.monthlyReturns, trader.capital);
                     const currentRating = answers[trader.id];
                     
@@ -804,7 +804,7 @@ const TraderPerformanceSurveyPage: React.FC = () => {
                             gap: '0.75rem', 
                             fontSize: '0.8rem'
                           }}>
-                            {trader.monthlyReturns.map((returnValue, monthIndex) => (
+                            {trader.monthlyReturns.map((returnValue: number, monthIndex: number) => (
                               <div key={monthIndex} style={{
                                 textAlign: 'center',
                                 padding: '1rem 0.75rem',

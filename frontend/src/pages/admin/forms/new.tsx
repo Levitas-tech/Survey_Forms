@@ -574,7 +574,7 @@ const AdminNewFormPage: React.FC = () => {
 
             {/* Questions List */}
             {formData.questions.length > 0 ? (
-              <div style={{ space: '1rem' }}>
+              <div style={{ gap: '1rem', display: 'flex', flexDirection: 'column' }}>
                 {formData.questions.map((question, index) => (
                   <div
                     key={question.id}
@@ -636,7 +636,7 @@ const AdminNewFormPage: React.FC = () => {
                         }}>
                           {question.text}
                         </h4>
-                        {question.options.length > 0 && (
+                        {question.options && question.options.length > 0 && (
                           <div style={{ marginTop: '0.75rem' }}>
                             <p style={{
                               fontSize: '0.875rem',
@@ -650,13 +650,13 @@ const AdminNewFormPage: React.FC = () => {
                               padding: 0,
                               margin: 0
                             }}>
-                              {question.options.map((option, optIndex) => (
+                              {question.options?.map((option, optIndex) => (
                                 <li key={optIndex} style={{
                                   fontSize: '0.875rem',
                                   color: '#374151',
                                   padding: '0.25rem 0'
                                 }}>
-                                  • {option}
+                                  • {option.text}
                                 </li>
                               ))}
                             </ul>

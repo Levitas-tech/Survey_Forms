@@ -108,7 +108,7 @@ const TraderPerformanceSurveyPage: React.FC = () => {
 
   const handlePreview = () => {
     // TODO: Implement form preview
-    toast.info('Preview functionality coming soon!');
+    toast('Preview functionality coming soon!');
   };
 
   const handleUpdateTrader = (traderId: string, field: keyof TraderPerformance, value: any) => {
@@ -477,7 +477,7 @@ const TraderPerformanceSurveyPage: React.FC = () => {
               </div>
             </div>
 
-            <div style={{ space: '2rem' }}>
+            <div style={{ gap: '2rem', display: 'flex', flexDirection: 'column' }}>
               {formData.questions.map((trader, index) => {
                 const moneyReturns = calculateMoneyReturns(trader.monthlyReturns, trader.capital);
                 
@@ -560,8 +560,8 @@ const TraderPerformanceSurveyPage: React.FC = () => {
                             </label>
                             <input
                               type="text"
-                              value={trader.traderName}
-                              onChange={(e) => handleUpdateTrader(trader.id, 'traderName', e.target.value)}
+                              value={trader.name}
+                              onChange={(e) => handleUpdateTrader(trader.id, 'name', e.target.value)}
                               style={{
                                 width: '100%',
                                 padding: '8px 12px',

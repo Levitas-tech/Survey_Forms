@@ -164,8 +164,8 @@ const SurveyPage: React.FC = () => {
     if (!form) return;
 
     // Validate required questions
-    const requiredQuestions = form.questions.filter(q => q.required);
-    const missingRequired = requiredQuestions.filter(q => !answers[q.id] || 
+    const requiredQuestions = form.questions.filter((q: any) => q.required);
+    const missingRequired = requiredQuestions.filter((q: any) => !answers[q.id] || 
       (Array.isArray(answers[q.id]) && answers[q.id].length === 0));
 
     if (missingRequired.length > 0) {
@@ -263,7 +263,7 @@ const SurveyPage: React.FC = () => {
       case 'radio':
       case 'single_choice':
         return (
-          <div style={{ space: '0.75rem' }}>
+          <div style={{ gap: '0.75rem', display: 'flex', flexDirection: 'column' }}>
             {question.options?.map((option, index) => (
               <label
                 key={option.id || index}
@@ -305,7 +305,7 @@ const SurveyPage: React.FC = () => {
 
       case 'checkbox':
         return (
-          <div style={{ space: '0.75rem' }}>
+          <div style={{ gap: '0.75rem', display: 'flex', flexDirection: 'column' }}>
             {question.options?.map((option, index) => (
               <label
                 key={option.id || index}
@@ -803,10 +803,10 @@ const SurveyPage: React.FC = () => {
           {/* Questions */}
           <div style={{ padding: '2rem' }}>
             {form.questions?.length > 0 ? (
-              <div style={{ space: '2rem' }}>
+              <div style={{ gap: '2rem', display: 'flex', flexDirection: 'column' }}>
                 {form.questions
-                  .sort((a, b) => a.order - b.order)
-                  .map((question, index) => (
+                  .sort((a: any, b: any) => a.order - b.order)
+                  .map((question: any, index: number) => (
                     <motion.div
                       key={question.id}
                       initial={{ opacity: 0, y: 20 }}
@@ -914,7 +914,7 @@ const SurveyPage: React.FC = () => {
                             fontSize: '0.8rem',
                             marginBottom: '1.5rem'
                           }}>
-                            {question.config.traderPerformance.monthlyReturns.map((returnValue, monthIndex) => (
+                            {question.config.traderPerformance.monthlyReturns.map((returnValue: number, monthIndex: number) => (
                               <div key={monthIndex} style={{
                                 textAlign: 'center',
                                 padding: '1rem 0.75rem',

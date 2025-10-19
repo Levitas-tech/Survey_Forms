@@ -109,7 +109,7 @@ export default function ResponseViewPage() {
         status: response.status,
         startedAt: response.startedAt,
         submittedAt: response.submittedAt,
-        answers: response.answers.map(answer => ({
+        answers: response.answers.map((answer: any) => ({
           question: answer.question.text,
           type: answer.question.type,
           value: answer.value,
@@ -482,7 +482,7 @@ export default function ResponseViewPage() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {response.answers.map((answer, index) => (
+            {response.answers.map((answer: any, index: number) => (
               <motion.div
                 key={answer.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -645,7 +645,7 @@ export default function ResponseViewPage() {
                         gap: '0.5rem',
                         fontSize: '0.75rem'
                       }}>
-                        {answer.question.config.traderPerformance.monthlyReturns.map((returnValue, monthIndex) => (
+                        {answer.question.config.traderPerformance.monthlyReturns.map((returnValue: number, monthIndex: number) => (
                           <div key={monthIndex} style={{
                             textAlign: 'center',
                             padding: '0.5rem 0.25rem',
