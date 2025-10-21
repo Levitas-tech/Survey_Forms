@@ -6,6 +6,7 @@ export interface TraderPerformance {
   capital: number; // Capital amount in crores
   mean: number; // Mean return
   stdDev: number; // Standard deviation
+  maxDrawdown?: number; // Maximum drawdown percentage
   description?: string;
 }
 
@@ -17,6 +18,7 @@ export const sampleTraderData: TraderPerformance[] = [
     capital: 5,
     mean: 1.73,
     stdDev: 2.15,
+    maxDrawdown: 2.3,
     description: "Consistent performer with moderate volatility"
   },
   {
@@ -26,6 +28,7 @@ export const sampleTraderData: TraderPerformance[] = [
     capital: 5,
     mean: 2.98,
     stdDev: 3.45,
+    maxDrawdown: 3.2,
     description: "High returns with higher volatility"
   },
   {
@@ -35,6 +38,7 @@ export const sampleTraderData: TraderPerformance[] = [
     capital: 5,
     mean: 1.02,
     stdDev: 0.42,
+    maxDrawdown: 0.5,
     description: "Low volatility, steady returns"
   },
   {
@@ -44,6 +48,7 @@ export const sampleTraderData: TraderPerformance[] = [
     capital: 5,
     mean: 2.58,
     stdDev: 6.78,
+    maxDrawdown: 5.2,
     description: "Extreme volatility with mixed results"
   },
   {
@@ -53,6 +58,7 @@ export const sampleTraderData: TraderPerformance[] = [
     capital: 5,
     mean: 2.11,
     stdDev: 0.22,
+    maxDrawdown: 0.7,
     description: "Very consistent, low volatility"
   },
   {
@@ -62,6 +68,7 @@ export const sampleTraderData: TraderPerformance[] = [
     capital: 5,
     mean: 4.12,
     stdDev: 13.45,
+    maxDrawdown: 12.5,
     description: "Extreme high volatility trader"
   },
   {
@@ -71,6 +78,7 @@ export const sampleTraderData: TraderPerformance[] = [
     capital: 5,
     mean: 1.68,
     stdDev: 0.28,
+    maxDrawdown: 0.6,
     description: "Stable, predictable returns"
   },
   {
@@ -80,6 +88,7 @@ export const sampleTraderData: TraderPerformance[] = [
     capital: 5,
     mean: 4.15,
     stdDev: 3.89,
+    maxDrawdown: 2.1,
     description: "Strong performer with moderate risk"
   },
   {
@@ -89,6 +98,7 @@ export const sampleTraderData: TraderPerformance[] = [
     capital: 5,
     mean: 0.38,
     stdDev: 0.25,
+    maxDrawdown: 0.1,
     description: "Very conservative, minimal returns"
   },
   {
@@ -98,6 +108,7 @@ export const sampleTraderData: TraderPerformance[] = [
     capital: 5,
     mean: 4.35,
     stdDev: 0.58,
+    maxDrawdown: 0.3,
     description: "Consistent high performer"
   }
 ];
