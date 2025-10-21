@@ -51,7 +51,6 @@ export class Response {
 
   @OneToMany(() => Answer, (answer) => answer.response, {
     cascade: true,
-    eager: true,
   })
   answers: Answer[];
 

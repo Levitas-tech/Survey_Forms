@@ -130,7 +130,21 @@ export class ResponsesService {
   }
 
   async update(id: string, updateResponseDto: UpdateResponseDto, user: User): Promise<Response> {
-    const response = await this.findOne(id, user);
+    console.log('Update request received:', {
+      id,
+      updateData: updateResponseDto,
+      userId: user.id
+    });
+
+    // Find response without loading answers to avoid cascade issues
+    const response = await this.responseRepository.findOne({
+      where: { id },
+      relations: ['form', 'user'],
+    });
+
+    if (!response) {
+      throw new NotFoundException('Response not found');
+    }
 
     // Users can only update their own responses
     if (user.role === UserRole.USER && response.userId !== user.id) {
@@ -139,18 +153,27 @@ export class ResponsesService {
 
     // Update answers if provided
     if (updateResponseDto.answers) {
-      // Remove existing answers
-      await this.answerRepository.delete({ responseId: id });
+      console.log('Updating answers:', updateResponseDto.answers);
+      
+      try {
+        // Remove existing answers
+        await this.answerRepository.delete({ responseId: id });
 
-      // Create new answers
-      const answers = updateResponseDto.answers.map((answerData) =>
-        this.answerRepository.create({
-          ...answerData,
-          responseId: id,
-        }),
-      );
+        // Create new answers
+        const answers = updateResponseDto.answers.map((answerData) => {
+          console.log('Creating answer:', answerData);
+          return this.answerRepository.create({
+            ...answerData,
+            responseId: id,
+          });
+        });
 
-      await this.answerRepository.save(answers);
+        console.log('Saving answers:', answers);
+        await this.answerRepository.save(answers);
+      } catch (error) {
+        console.error('Error updating answers:', error);
+        throw error;
+      }
     }
 
     // Update response status if provided
@@ -161,7 +184,14 @@ export class ResponsesService {
       }
     }
 
-    return this.responseRepository.save(response);
+    // Save response without loading answers
+    const savedResponse = await this.responseRepository.save(response);
+    
+    // Return response with answers loaded separately
+    return this.responseRepository.findOne({
+      where: { id: savedResponse.id },
+      relations: ['form', 'user', 'answers', 'answers.question'],
+    });
   }
 
   async submit(id: string, user: User): Promise<Response> {

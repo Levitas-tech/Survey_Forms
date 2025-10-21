@@ -99,6 +99,21 @@ export default function UserResponseViewPage() {
     enabled: !!id && !!user,
   });
 
+  // Fetch individual risk analysis
+  const { data: riskAnalysis, isLoading: riskAnalysisLoading } = useQuery({
+    queryKey: ['individual-risk', id],
+    queryFn: async () => {
+      try {
+        const response = await api.get(`/analytics/individual-risk/${id}`);
+        return response.data || null;
+      } catch (error) {
+        console.error('Error fetching risk analysis:', error);
+        return null; // Don't throw error, just return null
+      }
+    },
+    enabled: !!id && !!user && !!response,
+  });
+
   // Delete response mutation
   const deleteResponseMutation = useMutation({
     mutationFn: async (responseId: string) => {
@@ -483,11 +498,273 @@ export default function UserResponseViewPage() {
           </div>
         </motion.div>
 
+        {/* Risk Analysis Section */}
+        {riskAnalysis && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            style={{
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(10px)',
+              borderRadius: '20px',
+              padding: '2rem',
+              marginBottom: '2rem',
+              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+              border: '1px solid rgba(255, 255, 255, 0.2)'
+            }}
+          >
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              marginBottom: '2rem'
+            }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <BarChart size={20} color="white" />
+              </div>
+              <h2 style={{
+                fontSize: '1.5rem',
+                fontWeight: '700',
+                color: '#1f2937',
+                margin: 0
+              }}>
+                Your Risk Analysis
+              </h2>
+            </div>
+
+            {/* Risk Analysis Cards */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '1rem',
+              marginBottom: '2rem'
+            }}>
+              <div style={{
+                background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+                border: '1px solid #0ea5e9',
+                borderRadius: '12px',
+                padding: '1.5rem',
+                textAlign: 'center'
+              }}>
+                <div style={{
+                  fontSize: '0.875rem',
+                  fontWeight: '600',
+                  color: '#0369a1',
+                  marginBottom: '0.5rem'
+                }}>
+                  Alpha (α)
+                </div>
+                <div style={{
+                  fontSize: '1.5rem',
+                  fontWeight: '700',
+                  color: '#0c4a6e'
+                }}>
+                  {riskAnalysis.alpha.toFixed(3)}
+                </div>
+                <div style={{
+                  fontSize: '0.75rem',
+                  color: '#0284c7',
+                  marginTop: '0.25rem'
+                }}>
+                  Intercept
+                </div>
+              </div>
+
+              <div style={{
+                background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+                border: '1px solid #22c55e',
+                borderRadius: '12px',
+                padding: '1.5rem',
+                textAlign: 'center'
+              }}>
+                <div style={{
+                  fontSize: '0.875rem',
+                  fontWeight: '600',
+                  color: '#16a34a',
+                  marginBottom: '0.5rem'
+                }}>
+                  Beta1 (β₁)
+                </div>
+                <div style={{
+                  fontSize: '1.5rem',
+                  fontWeight: '700',
+                  color: '#14532d'
+                }}>
+                  {riskAnalysis.beta1.toFixed(3)}
+                </div>
+                <div style={{
+                  fontSize: '0.75rem',
+                  color: '#15803d',
+                  marginTop: '0.25rem'
+                }}>
+                  Returns Coefficient
+                </div>
+              </div>
+
+              <div style={{
+                background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                border: '1px solid #f59e0b',
+                borderRadius: '12px',
+                padding: '1.5rem',
+                textAlign: 'center'
+              }}>
+                <div style={{
+                  fontSize: '0.875rem',
+                  fontWeight: '600',
+                  color: '#d97706',
+                  marginBottom: '0.5rem'
+                }}>
+                  Beta2 (β₂)
+                </div>
+                <div style={{
+                  fontSize: '1.5rem',
+                  fontWeight: '700',
+                  color: '#92400e'
+                }}>
+                  {riskAnalysis.beta2.toFixed(3)}
+                </div>
+                <div style={{
+                  fontSize: '0.75rem',
+                  color: '#b45309',
+                  marginTop: '0.25rem'
+                }}>
+                  Risk Coefficient
+                </div>
+              </div>
+
+              <div style={{
+                background: 'linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%)',
+                border: '1px solid #ec4899',
+                borderRadius: '12px',
+                padding: '1.5rem',
+                textAlign: 'center'
+              }}>
+                <div style={{
+                  fontSize: '0.875rem',
+                  fontWeight: '600',
+                  color: '#be185d',
+                  marginBottom: '0.5rem'
+                }}>
+                  Risk Aversion
+                </div>
+                <div style={{
+                  fontSize: '1.5rem',
+                  fontWeight: '700',
+                  color: '#831843'
+                }}>
+                  {riskAnalysis.riskAversionCoefficient.toFixed(3)}
+                </div>
+                <div style={{
+                  fontSize: '0.75rem',
+                  color: '#be185d',
+                  marginTop: '0.25rem'
+                }}>
+                  -2β₁/β₂
+                </div>
+              </div>
+            </div>
+
+            {/* Additional Metrics */}
+            <div style={{
+              background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+              border: '1px solid #e2e8f0',
+              borderRadius: '12px',
+              padding: '1.5rem'
+            }}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                gap: '1rem'
+              }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{
+                    fontSize: '0.875rem',
+                    fontWeight: '600',
+                    color: '#6b7280',
+                    marginBottom: '0.5rem'
+                  }}>
+                    R² Score
+                  </div>
+                  <div style={{
+                    fontSize: '1.25rem',
+                    fontWeight: '700',
+                    color: '#374151'
+                  }}>
+                    {(riskAnalysis.rSquared * 100).toFixed(1)}%
+                  </div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{
+                    fontSize: '0.875rem',
+                    fontWeight: '600',
+                    color: '#6b7280',
+                    marginBottom: '0.5rem'
+                  }}>
+                    Model Fit
+                  </div>
+                  <div style={{
+                    fontSize: '1.25rem',
+                    fontWeight: '700',
+                    color: riskAnalysis.rSquared > 0.7 ? '#16a34a' : riskAnalysis.rSquared > 0.4 ? '#f59e0b' : '#ef4444'
+                  }}>
+                    {riskAnalysis.rSquared > 0.7 ? 'Excellent' : riskAnalysis.rSquared > 0.4 ? 'Good' : 'Fair'}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Explanation */}
+            <div style={{
+              background: 'linear-gradient(135deg, #fef7ff 0%, #f3e8ff 100%)',
+              border: '1px solid #c084fc',
+              borderRadius: '12px',
+              padding: '1.5rem',
+              marginTop: '1rem'
+            }}>
+              <h4 style={{
+                fontSize: '1rem',
+                fontWeight: '600',
+                color: '#7c2d12',
+                margin: '0 0 0.75rem 0'
+              }}>
+                What do these values mean?
+              </h4>
+              <div style={{
+                fontSize: '0.875rem',
+                color: '#581c87',
+                lineHeight: '1.6'
+              }}>
+                <p style={{ margin: '0 0 0.5rem 0' }}>
+                  <strong>Alpha (α):</strong> Your baseline rating tendency when returns and risk are zero.
+                </p>
+                <p style={{ margin: '0 0 0.5rem 0' }}>
+                  <strong>Beta1 (β₁):</strong> How much your rating changes with returns. Positive values mean you prefer higher returns.
+                </p>
+                <p style={{ margin: '0 0 0.5rem 0' }}>
+                  <strong>Beta2 (β₂):</strong> How much your rating changes with risk. Negative values mean you dislike risk.
+                </p>
+                <p style={{ margin: 0 }}>
+                  <strong>Risk Aversion:</strong> Your overall risk preference. Higher values indicate greater risk aversion.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {/* Answers Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          transition={{ delay: 0.2 }}
           style={{
             background: 'rgba(255, 255, 255, 0.95)',
             backdropFilter: 'blur(10px)',
@@ -765,6 +1042,7 @@ export default function UserResponseViewPage() {
             ))}
           </div>
         </motion.div>
+
       </div>
     </div>
   );

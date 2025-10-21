@@ -70,13 +70,13 @@ export default function RiskAnalysisPage() {
   const { data: responses, isLoading: responsesLoading, refetch: refetchResponses } = useQuery({
     queryKey: ['admin-responses'],
     queryFn: () => api.get('/responses').then(res => res.data),
-    enabled: !!user && (user.role === 'admin' || user.role !== 'super_admin'),
+    enabled: !!user && (user.role === 'admin' || user.role === 'super_admin'),
   });
 
   // Risk analysis mutation
   const analyzeRiskMutation = useMutation({
     mutationFn: async () => {
-      const response = await api.post('/admin/risk-analysis');
+      const response = await api.post('/analytics/admin/risk-analysis');
       return response.data;
     },
     onSuccess: (data) => {
@@ -246,7 +246,7 @@ export default function RiskAnalysisPage() {
               }}
             >
               {isAnalyzing ? <RefreshCw size={16} className="animate-spin" /> : <Brain size={16} />}
-              <span style={{ display: 'none' }}>Analyze</span>
+              <span>Analyze Risk</span>
             </button>
             <button
               style={{
@@ -265,7 +265,7 @@ export default function RiskAnalysisPage() {
               }}
             >
               <Download size={16} />
-              <span style={{ display: 'none' }}>Export</span>
+              <span>Export</span>
             </button>
           </div>
         </div>

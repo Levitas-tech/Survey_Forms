@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Param,
   UseGuards,
   Request,
@@ -35,5 +36,24 @@ export class AnalyticsController {
   @ApiResponse({ status: 200, description: 'Risk aversion chart data retrieved successfully' })
   async getRiskAversionChartData(@Param('formId') formId: string) {
     return this.analyticsService.getRiskAversionChartData(formId);
+  }
+
+  @Get('individual-risk/:responseId')
+  @ApiOperation({ summary: 'Get individual risk analysis for a response' })
+  @ApiResponse({ status: 200, description: 'Individual risk analysis retrieved successfully' })
+  async getIndividualRiskAnalysis(
+    @Param('responseId') responseId: string,
+    @Request() req
+  ) {
+    return this.analyticsService.getIndividualRiskAnalysis(responseId, req.user.id);
+  }
+
+  @Post('admin/risk-analysis')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Perform risk analysis on all responses (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Risk analysis completed successfully' })
+  async performRiskAnalysis() {
+    return this.analyticsService.performRiskAnalysis();
   }
 }

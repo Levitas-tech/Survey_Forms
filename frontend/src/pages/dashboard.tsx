@@ -71,13 +71,6 @@ const DashboardPage: React.FC = () => {
       icon: Eye,
       color: '#f59e0b',
       change: '+5% from last month'
-    },
-    {
-      title: 'Completion Rate',
-      value: '87%',
-      icon: TrendingUp,
-      color: '#8b5cf6',
-      change: '+3% from last month'
     }
   ];
 
