@@ -1,0 +1,13 @@
+#In case of deployment
+
+cd /var/www/surveyflow/backend
+git pull
+npm install
+pm2 restart surveyflow-backend
+
+cd /var/www/surveyflow/frontend
+git pull
+npm install
+npm run build
+pm2 restart surveyflow-frontend
+pm2 save

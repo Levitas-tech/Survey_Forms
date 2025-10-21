@@ -33,6 +33,7 @@ interface Question {
       capital: number;
       mean: number;
       stdDev: number;
+      maxDrawdown?: number;
     };
   };
 }
@@ -62,6 +63,7 @@ const AdminFormEditorPage: React.FC = () => {
   const { id } = router.query;
   const [editingQuestion, setEditingQuestion] = useState<string | null>(null);
   const [showAddQuestion, setShowAddQuestion] = useState(false);
+
   const [newQuestion, setNewQuestion] = useState<Partial<Question>>({
     type: 'single_choice',
     text: '',
@@ -794,8 +796,191 @@ const QuestionEditor: React.FC<{
             </label>
           </div>
 
+          {/* Trader Performance Data Display */}
+          {editData.config?.traderPerformance && !isEditing && (
+            <div style={{
+              marginTop: '2rem',
+              padding: '1.5rem',
+              background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+              border: '1px solid #e2e8f0',
+              borderRadius: '12px',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+            }}>
+              <h4 style={{
+                fontSize: '1.1rem',
+                fontWeight: '600',
+                color: '#1e293b',
+                marginBottom: '1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                📊 Trader Performance Data
+              </h4>
+              
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(2, 1fr)', 
+                gap: '1rem', 
+                marginBottom: '1rem' 
+              }}>
+                <div style={{
+                  background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+                  border: '1px solid #bae6fd',
+                  borderRadius: '8px',
+                  padding: '0.75rem',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '0.7rem', color: '#0369a1', fontWeight: '600', marginBottom: '0.25rem' }}>
+                    Trader Name
+                  </div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#0c4a6e' }}>
+                    {editData.config.traderPerformance.traderName}
+                  </div>
+                </div>
+                <div style={{
+                  background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+                  border: '1px solid #bbf7d0',
+                  borderRadius: '8px',
+                  padding: '0.75rem',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '0.7rem', color: '#166534', fontWeight: '600', marginBottom: '0.25rem' }}>
+                    Capital
+                  </div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#14532d' }}>
+                    ₹{editData.config.traderPerformance.capital} Cr
+                  </div>
+                </div>
+                <div style={{
+                  background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                  border: '1px solid #fbbf24',
+                  borderRadius: '8px',
+                  padding: '0.75rem',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '0.7rem', color: '#d97706', fontWeight: '600', marginBottom: '0.25rem' }}>
+                    Mean Return
+                  </div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#92400e' }}>
+                    {editData.config.traderPerformance.mean >= 0 ? '+' : ''}{editData.config.traderPerformance.mean}%
+                  </div>
+                </div>
+                <div style={{
+                  background: 'linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%)',
+                  border: '1px solid #c4b5fd',
+                  borderRadius: '8px',
+                  padding: '0.75rem',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '0.7rem', color: '#7c3aed', fontWeight: '600', marginBottom: '0.25rem' }}>
+                    Std Deviation
+                  </div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#5b21b6' }}>
+                    {editData.config.traderPerformance.stdDev}%
+                  </div>
+                </div>
+                <div style={{
+                  background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
+                  border: '1px solid #fca5a5',
+                  borderRadius: '8px',
+                  padding: '0.75rem',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '0.7rem', color: '#dc2626', fontWeight: '600', marginBottom: '0.25rem' }}>
+                    Max Drawdown
+                  </div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#991b1b' }}>
+                    {editData.config.traderPerformance.maxDrawdown || '0.00'}%
+                  </div>
+                </div>
+              </div>
+              
+              {/* Monthly Returns Display */}
+              <div style={{
+                background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                padding: '1rem',
+                marginTop: '1rem'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  marginBottom: '1rem'
+                }}>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 4px rgba(102, 126, 234, 0.3)'
+                  }}>
+                    <span style={{ color: 'white', fontSize: '0.8rem' }}>📊</span>
+                  </div>
+                  <h5 style={{
+                    fontSize: '0.875rem',
+                    fontWeight: '600',
+                    color: '#1e293b',
+                    margin: 0
+                  }}>
+                    Monthly Returns (12 months)
+                  </h5>
+                </div>
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(6, 1fr)', 
+                  gap: '0.5rem', 
+                  fontSize: '0.75rem'
+                }}>
+                  {editData.config.traderPerformance.monthlyReturns.map((returnValue, monthIndex) => (
+                    <div key={monthIndex} style={{
+                      textAlign: 'center',
+                      padding: '0.75rem 0.5rem',
+                      background: 'white',
+                      color: '#374151',
+                      borderRadius: '8px',
+                      fontWeight: '500',
+                      border: '1px solid #e5e7eb',
+                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                      transition: 'all 0.2s ease'
+                    }}>
+                      <div style={{ 
+                        fontSize: '0.65rem', 
+                        color: '#64748b',
+                        marginBottom: '0.25rem',
+                        fontWeight: '600'
+                      }}>
+                        M{monthIndex + 1}
+                      </div>
+                      <div style={{ 
+                        fontSize: '0.8rem',
+                        fontWeight: '700',
+                        color: '#1e293b',
+                        marginBottom: '0.25rem'
+                      }}>
+                        {returnValue > 0 ? '+' : ''}{returnValue.toFixed(2)}%
+                      </div>
+                      <div style={{ 
+                        fontSize: '0.65rem',
+                        fontWeight: '600',
+                        color: '#6b7280'
+                      }}>
+                        ₹{((returnValue / 100) * (editData.config?.traderPerformance?.capital || 0)).toFixed(2)} Cr
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Trader Performance Data Editing */}
-          {editData.config?.traderPerformance && (
+          {editData.config?.traderPerformance && isEditing && (
             <div style={{
               marginTop: '2rem',
               padding: '1.5rem',
@@ -913,7 +1098,8 @@ const QuestionEditor: React.FC<{
                           monthlyReturns: editData.config?.traderPerformance?.monthlyReturns || [],
                           capital: editData.config?.traderPerformance?.capital || 0,
                           mean: parseFloat(e.target.value) || 0,
-                          stdDev: editData.config?.traderPerformance?.stdDev || 0
+                          stdDev: editData.config?.traderPerformance?.stdDev || 0,
+                          maxDrawdown: editData.config?.traderPerformance?.maxDrawdown || 0
                         }
                       }
                     })}
@@ -949,7 +1135,45 @@ const QuestionEditor: React.FC<{
                           monthlyReturns: editData.config?.traderPerformance?.monthlyReturns || [],
                           capital: editData.config?.traderPerformance?.capital || 0,
                           mean: editData.config?.traderPerformance?.mean || 0,
-                          stdDev: parseFloat(e.target.value) || 0
+                          stdDev: parseFloat(e.target.value) || 0,
+                          maxDrawdown: editData.config?.traderPerformance?.maxDrawdown || 0
+                        }
+                      }
+                    })}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '8px',
+                      fontSize: '1rem'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '0.5rem'
+                  }}>
+                    Max Drawdown (%)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editData.config.traderPerformance.maxDrawdown || ''}
+                    onChange={(e) => setEditData({
+                      ...editData,
+                      config: {
+                        ...editData.config,
+                        traderPerformance: {
+                          traderName: editData.config?.traderPerformance?.traderName || '',
+                          monthlyReturns: editData.config?.traderPerformance?.monthlyReturns || [],
+                          capital: editData.config?.traderPerformance?.capital || 0,
+                          mean: editData.config?.traderPerformance?.mean || 0,
+                          stdDev: editData.config?.traderPerformance?.stdDev || 0,
+                          maxDrawdown: parseFloat(e.target.value) || 0
                         }
                       }
                     })}
@@ -970,45 +1194,99 @@ const QuestionEditor: React.FC<{
                   fontSize: '0.875rem',
                   fontWeight: '500',
                   color: '#374151',
-                  marginBottom: '0.5rem'
+                  marginBottom: '0.75rem'
                 }}>
-                  Monthly Returns (12 months) - Enter as comma-separated values
+                  Monthly Returns (12 months)
                 </label>
-                <textarea
-                  value={editData.config.traderPerformance.monthlyReturns?.join(', ') || ''}
-                  onChange={(e) => {
-                    const values = e.target.value.split(',').map(v => parseFloat(v.trim())).filter(v => !isNaN(v));
-                    setEditData({
-                      ...editData,
-                      config: {
-                        ...editData.config,
-                        traderPerformance: {
-                          traderName: editData.config?.traderPerformance?.traderName || '',
-                          monthlyReturns: values.length === 12 ? values : (editData.config?.traderPerformance?.monthlyReturns || []),
-                          capital: editData.config?.traderPerformance?.capital || 0,
-                          mean: editData.config?.traderPerformance?.mean || 0,
-                          stdDev: editData.config?.traderPerformance?.stdDev || 0
-                        }
-                      }
-                    });
-                  }}
-                  placeholder="2.5, -1.2, 3.1, 0.8, -0.5, 4.2, 1.7, -2.3, 2.9, 0.3, 1.4, 3.1"
-                  rows={3}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '1rem',
-                    resize: 'vertical'
-                  }}
-                />
+                
+                {/* Monthly Returns Table */}
+                <div style={{
+                  background: 'white',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+                }}>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(6, 1fr)',
+                    gap: '1px',
+                    background: '#f3f4f6'
+                  }}>
+                    {Array.from({ length: 12 }, (_, index) => {
+                      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                      const currentValue = editData.config?.traderPerformance?.monthlyReturns?.[index] || 0;
+                      
+                      return (
+                        <div key={index} style={{
+                          background: 'white',
+                          padding: '0.75rem 0.5rem',
+                          textAlign: 'center',
+                          border: '1px solid #e5e7eb'
+                        }}>
+                          <div style={{
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            color: '#6b7280',
+                            marginBottom: '0.5rem'
+                          }}>
+                            {monthNames[index]}
+                          </div>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={currentValue}
+                            onChange={(e) => {
+                              const newValue = parseFloat(e.target.value) || 0;
+                              const newMonthlyReturns = [...(editData.config?.traderPerformance?.monthlyReturns || [])];
+                              newMonthlyReturns[index] = newValue;
+                              
+                              setEditData({
+                                ...editData,
+                                config: {
+                                  ...editData.config,
+                                  traderPerformance: {
+                                    traderName: editData.config?.traderPerformance?.traderName || '',
+                                    monthlyReturns: newMonthlyReturns,
+                                    capital: editData.config?.traderPerformance?.capital || 0,
+                                    mean: editData.config?.traderPerformance?.mean || 0,
+                                    stdDev: editData.config?.traderPerformance?.stdDev || 0,
+                                    maxDrawdown: editData.config?.traderPerformance?.maxDrawdown || 0
+                                  }
+                                }
+                              });
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '0.375rem 0.5rem',
+                              border: '1px solid #d1d5db',
+                              borderRadius: '4px',
+                              fontSize: '0.875rem',
+                              textAlign: 'center',
+                              background: 'white'
+                            }}
+                            placeholder="0.0"
+                          />
+                          <div style={{
+                            fontSize: '0.625rem',
+                            color: '#6b7280',
+                            marginTop: '0.25rem',
+                            fontWeight: '500'
+                          }}>
+                            {currentValue >= 0 ? '+' : ''}{currentValue.toFixed(1)}%
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                
                 <p style={{
                   fontSize: '0.75rem',
                   color: '#6b7280',
                   marginTop: '0.5rem'
                 }}>
-                  Enter exactly 12 values separated by commas. Values will be automatically calculated if you update mean and std dev.
+                  Enter monthly return percentages for each month. Values will be automatically calculated if you update mean and std dev.
                 </p>
               </div>
             </div>
@@ -1120,6 +1398,20 @@ const QuestionEditor: React.FC<{
                   </div>
                   <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#5b21b6' }}>
                     {question.config.traderPerformance.stdDev}%
+                  </div>
+                </div>
+                <div style={{
+                  background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
+                  border: '1px solid #fca5a5',
+                  borderRadius: '8px',
+                  padding: '0.75rem',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '0.7rem', color: '#dc2626', fontWeight: '600', marginBottom: '0.25rem' }}>
+                    Max Drawdown
+                  </div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#991b1b' }}>
+                    {question.config.traderPerformance.maxDrawdown || '0.00'}%
                   </div>
                 </div>
               </div>

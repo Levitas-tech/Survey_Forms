@@ -100,27 +100,27 @@ const DashboardPage: React.FC = () => {
         <div style={{
           maxWidth: '1200px',
           margin: '0 auto',
-          padding: '0 1.5rem',
+          padding: '0 1rem',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          height: '4rem'
+          height: '3.5rem'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div style={{
-              width: '40px',
-              height: '40px',
+              width: '32px',
+              height: '32px',
               background: 'linear-gradient(135deg, #667eea, #764ba2)',
-              borderRadius: '12px',
+              borderRadius: '8px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <FileText size={24} color="white" />
+              <FileText size={20} color="white" />
             </div>
             <div>
               <h1 style={{
-                fontSize: '1.5rem',
+                fontSize: '1.125rem',
                 fontWeight: '700',
                 color: '#1f2937',
                 margin: 0
@@ -128,34 +128,36 @@ const DashboardPage: React.FC = () => {
                 SurveyFlow
               </h1>
               <p style={{
-                fontSize: '0.875rem',
+                fontSize: '0.75rem',
                 color: '#6b7280',
-                margin: 0
+                margin: 0,
+                display: 'none'
               }}>
                 Survey Management Platform
               </p>
             </div>
           </div>
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.5rem 1rem',
+              gap: '0.25rem',
+              padding: '0.4rem 0.75rem',
               background: 'rgba(102, 126, 234, 0.1)',
-              borderRadius: '12px',
+              borderRadius: '8px',
               color: '#667eea',
-              fontSize: '0.875rem',
+              fontSize: '0.75rem',
               fontWeight: '500'
             }}>
               <div style={{
-                width: '8px',
-                height: '8px',
+                width: '6px',
+                height: '6px',
                 background: '#667eea',
                 borderRadius: '50%'
               }} />
-              {user.name}
+              <span style={{ display: 'none' }}>{user.name}</span>
+              <span style={{ fontSize: '0.7rem' }}>{user.name?.split(' ')[0]}</span>
             </div>
             <button
               onClick={logout}
@@ -163,18 +165,19 @@ const DashboardPage: React.FC = () => {
                 background: 'white',
                 color: '#ef4444',
                 border: '1px solid #d1d5db',
-                borderRadius: '12px',
-                padding: '0.75rem 1.5rem',
+                borderRadius: '8px',
+                padding: '0.5rem',
                 cursor: 'pointer',
                 fontWeight: '500',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem',
-                transition: 'all 0.2s ease'
+                gap: '0.25rem',
+                transition: 'all 0.2s ease',
+                minWidth: 'auto'
               }}
             >
-              <LogOut size={20} />
-              Logout
+              <LogOut size={16} />
+              <span style={{ display: 'none' }}>Logout</span>
             </button>
           </div>
         </div>
@@ -183,24 +186,24 @@ const DashboardPage: React.FC = () => {
       <div style={{
         maxWidth: '1200px',
         margin: '0 auto',
-        padding: '2rem 1.5rem'
+        padding: '1rem'
       }}>
         {/* Welcome Message */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          style={{ marginBottom: '2rem' }}
+          style={{ marginBottom: '1.5rem' }}
         >
           <h2 style={{
-            fontSize: '2rem',
+            fontSize: '1.5rem',
             fontWeight: '700',
             color: '#1f2937',
-            marginBottom: '0.5rem'
+            marginBottom: '0.25rem'
           }}>
-            Welcome back, {user.name}! 👋
+            Welcome back, {user.name?.split(' ')[0]}! 👋
           </h2>
           <p style={{
-            fontSize: '1.125rem',
+            fontSize: '0.875rem',
             color: '#6b7280',
             margin: 0
           }}>
@@ -214,9 +217,9 @@ const DashboardPage: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: '1.5rem',
-            marginBottom: '2rem'
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: '0.75rem',
+            marginBottom: '1.5rem'
           }}
         >
           {stats.map((stat, index) => (
@@ -228,9 +231,9 @@ const DashboardPage: React.FC = () => {
               style={{
                 background: 'rgba(255, 255, 255, 0.95)',
                 backdropFilter: 'blur(20px)',
-                borderRadius: '16px',
-                padding: '1.5rem',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                borderRadius: '12px',
+                padding: '1rem',
+                boxShadow: '0 2px 4px -1px rgba(0, 0, 0, 0.1)',
                 border: '1px solid rgba(226, 232, 240, 0.8)',
                 position: 'relative',
                 overflow: 'hidden'
@@ -249,19 +252,19 @@ const DashboardPage: React.FC = () => {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'flex-start',
-                marginBottom: '1rem'
+                marginBottom: '0.75rem'
               }}>
                 <div>
                   <h3 style={{
-                    fontSize: '0.875rem',
+                    fontSize: '0.75rem',
                     fontWeight: '500',
                     color: '#6b7280',
-                    margin: '0 0 0.5rem 0'
+                    margin: '0 0 0.25rem 0'
                   }}>
                     {stat.title}
                   </h3>
                   <p style={{
-                    fontSize: '2rem',
+                    fontSize: '1.5rem',
                     fontWeight: '700',
                     color: '#1f2937',
                     margin: 0
@@ -270,19 +273,19 @@ const DashboardPage: React.FC = () => {
                   </p>
                 </div>
                 <div style={{
-                  width: '48px',
-                  height: '48px',
+                  width: '32px',
+                  height: '32px',
                   background: `linear-gradient(135deg, ${stat.color}, ${stat.color}88)`,
-                  borderRadius: '12px',
+                  borderRadius: '8px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
                 }}>
-                  <stat.icon size={24} color="white" />
+                  <stat.icon size={16} color="white" />
                 </div>
               </div>
               <p style={{
-                fontSize: '0.75rem',
+                fontSize: '0.65rem',
                 color: '#10b981',
                 margin: 0,
                 fontWeight: '500'
@@ -307,20 +310,20 @@ const DashboardPage: React.FC = () => {
           <div style={{
             background: 'rgba(255, 255, 255, 0.95)',
             backdropFilter: 'blur(20px)',
-            borderRadius: '16px',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            borderRadius: '12px',
+            boxShadow: '0 2px 4px -1px rgba(0, 0, 0, 0.1)',
             border: '1px solid rgba(226, 232, 240, 0.8)',
             overflow: 'hidden',
             maxWidth: '400px',
             width: '100%'
           }}>
             <div style={{
-              padding: '1.5rem',
+              padding: '1rem',
               borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
               background: 'rgba(248, 250, 252, 0.5)'
             }}>
               <h3 style={{
-                fontSize: '1.125rem',
+                fontSize: '1rem',
                 fontWeight: '600',
                 color: '#1f2937',
                 margin: 0
@@ -328,8 +331,8 @@ const DashboardPage: React.FC = () => {
                 Quick Actions
               </h3>
             </div>
-            <div style={{ padding: '1.5rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ padding: '1rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <button
                   onClick={() => router.push('/surveys')}
                   style={{
@@ -337,14 +340,15 @@ const DashboardPage: React.FC = () => {
                     background: 'linear-gradient(135deg, #667eea, #764ba2)',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '12px',
-                    padding: '0.75rem 1rem',
+                    borderRadius: '8px',
+                    padding: '0.6rem 0.75rem',
                     cursor: 'pointer',
                     fontWeight: '500',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.5rem',
-                    transition: 'all 0.2s ease'
+                    transition: 'all 0.2s ease',
+                    fontSize: '0.875rem'
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'translateY(-1px)';
@@ -365,14 +369,15 @@ const DashboardPage: React.FC = () => {
                     background: 'white',
                     color: '#667eea',
                     border: '1px solid #d1d5db',
-                    borderRadius: '12px',
-                    padding: '0.75rem 1rem',
+                    borderRadius: '8px',
+                    padding: '0.6rem 0.75rem',
                     cursor: 'pointer',
                     fontWeight: '500',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.5rem',
-                    transition: 'all 0.2s ease'
+                    transition: 'all 0.2s ease',
+                    fontSize: '0.875rem'
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.borderColor = '#667eea';

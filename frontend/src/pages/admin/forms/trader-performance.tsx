@@ -37,6 +37,7 @@ const TraderPerformanceSurveyPage: React.FC = () => {
       capital: trader.capital,
       mean: trader.mean,
       stdDev: trader.stdDev,
+      maxDrawdown: trader.maxDrawdown || 0,
       description: trader.description,
       order: index + 1
     }))
@@ -741,6 +742,28 @@ const TraderPerformanceSurveyPage: React.FC = () => {
                             color: '#1f2937'
                           }}>
                             ₹{trader.capital} Cr
+                          </div>
+                        </div>
+                        <div style={{
+                          background: '#fef2f2',
+                          padding: '1rem',
+                          borderRadius: '8px',
+                          textAlign: 'center'
+                        }}>
+                          <div style={{
+                            fontSize: '0.75rem',
+                            fontWeight: '500',
+                            color: '#dc2626',
+                            marginBottom: '0.25rem'
+                          }}>
+                            Max Drawdown
+                          </div>
+                          <div style={{
+                            fontSize: '1.25rem',
+                            fontWeight: '700',
+                            color: '#1f2937'
+                          }}>
+                            {trader.maxDrawdown || '0.00'}%
                           </div>
                         </div>
                       </div>

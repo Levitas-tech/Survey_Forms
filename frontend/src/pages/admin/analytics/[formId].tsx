@@ -616,6 +616,30 @@ const RiskAversionAnalyticsPage: React.FC = () => {
               borderRadius: '8px',
               border: '1px solid #e5e7eb'
             }}>
+              {/* Grid lines */}
+              {[0, 0.25, 0.5, 0.75, 1].map((value, index) => (
+                <div key={`h-grid-${index}`} style={{
+                  position: 'absolute',
+                  left: '20px',
+                  right: '20px',
+                  top: `${20 + value * 80}%`,
+                  height: '1px',
+                  background: '#e5e7eb',
+                  opacity: 0.5
+                }} />
+              ))}
+              {[0, 0.25, 0.5, 0.75, 1].map((value, index) => (
+                <div key={`v-grid-${index}`} style={{
+                  position: 'absolute',
+                  top: '20px',
+                  bottom: '20px',
+                  left: `${20 + value * 80}%`,
+                  width: '1px',
+                  background: '#e5e7eb',
+                  opacity: 0.5
+                }} />
+              ))}
+
               {/* Axes */}
               <div style={{
                 position: 'absolute',
@@ -635,37 +659,47 @@ const RiskAversionAnalyticsPage: React.FC = () => {
               }} />
               
               {/* Data points */}
-              {chartData?.scatterData.map((point, index) => (
-                <motion.div
-                  key={point.userId}
-                  initial={{ opacity: 0, scale: 0 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.05 }}
-                  style={{
-                    position: 'absolute',
-                    left: `${20 + (point.x - analysis.riskAversionRange.min) / (analysis.riskAversionRange.max - analysis.riskAversionRange.min) * 80}%`,
-                    bottom: `${20 + (point.y + 2) / 4 * 80}%`,
-                    width: '12px',
-                    height: '12px',
-                    background: getRiskCategoryColor(point.riskCategory),
-                    borderRadius: '50%',
-                    cursor: 'pointer',
-                    border: '2px solid white',
-                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'scale(1.5)';
-                    e.currentTarget.style.zIndex = '10';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'scale(1)';
-                    e.currentTarget.style.zIndex = '1';
-                  }}
-                  onClick={() => setSelectedUser(point.userId)}
-                  title={`${point.userName} - ${point.riskCategory}`}
-                />
-              ))}
+              {chartData?.scatterData.map((point, index) => {
+                // Calculate position based on risk coefficient (x) and normalized rating (y)
+                // Map risk coefficient from [-1, 1] to [0, 100] for X positioning
+                const xPosition = Math.max(5, Math.min(95, ((point.x + 1) / 2) * 100));
+                
+                // Map normalized rating from [-2, 2] to [0, 100] for Y positioning
+                const yPosition = Math.max(5, Math.min(95, ((point.y + 2) / 4) * 100));
+                
+                return (
+                  <motion.div
+                    key={point.userId}
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.05 }}
+                    style={{
+                      position: 'absolute',
+                      left: `${xPosition}%`,
+                      bottom: `${yPosition}%`,
+                      width: '12px',
+                      height: '12px',
+                      background: getRiskCategoryColor(point.riskCategory),
+                      borderRadius: '50%',
+                      cursor: 'pointer',
+                      border: '2px solid white',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                      transition: 'all 0.2s ease',
+                      transform: 'translate(-50%, 50%)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translate(-50%, 50%) scale(1.5)';
+                      e.currentTarget.style.zIndex = '10';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translate(-50%, 50%) scale(1)';
+                      e.currentTarget.style.zIndex = '1';
+                    }}
+                    onClick={() => setSelectedUser(point.userId)}
+                    title={`${point.userName} - ${point.riskCategory}`}
+                  />
+                );
+              })}
               
               {/* Labels */}
               <div style={{

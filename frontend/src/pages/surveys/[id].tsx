@@ -66,6 +66,9 @@ const SurveyPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const questionsPerPage = 1;
+
 
   // Fetch form data
   const { data: form, isLoading: formLoading, error: formError } = useQuery({
@@ -139,6 +142,30 @@ const SurveyPage: React.FC = () => {
       ...prev,
       [questionId]: value
     }));
+  };
+
+  // Pagination logic
+  const totalPages = form?.questions?.length || 0;
+  const currentQuestion = form?.questions?.sort((a: any, b: any) => a.order - b.order)[currentPage];
+  const isFirstPage = currentPage === 0;
+  const isLastPage = currentPage === totalPages - 1;
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages - 1) {
+      setCurrentPage(prev => prev + 1);
+    }
+  };
+
+  const goToPreviousPage = () => {
+    if (currentPage > 0) {
+      setCurrentPage(prev => prev - 1);
+    }
+  };
+
+  const goToPage = (page: number) => {
+    if (page >= 0 && page < totalPages) {
+      setCurrentPage(page);
+    }
   };
 
   const handleSave = async () => {
@@ -678,81 +705,89 @@ const SurveyPage: React.FC = () => {
               }}>
                 {form.title}
               </h1>
-              <p style={{
-                fontSize: '0.875rem',
-                color: '#6b7280',
-                margin: 0
-              }}>
-                Survey
-              </p>
+              {form.description && (
+                <p style={{
+                  fontSize: '0.75rem',
+                  color: '#6b7280',
+                  margin: 0,
+                  lineHeight: '1.3'
+                }}>
+                  {form.description}
+                </p>
+              )}
             </div>
           </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <button
-              onClick={handleSave}
-              disabled={createResponseMutation.isPending}
-              style={{
-                background: 'white',
-                color: '#667eea',
-                border: '1px solid #d1d5db',
-                borderRadius: '12px',
-                padding: '0.75rem 1.5rem',
-                cursor: createResponseMutation.isPending ? 'not-allowed' : 'pointer',
-                fontWeight: '500',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                transition: 'all 0.2s ease',
-                opacity: createResponseMutation.isPending ? 0.7 : 1
-              }}
-            >
-              {createResponseMutation.isPending && (
-                <div style={{
-                  width: '16px',
-                  height: '16px',
-                  border: '2px solid transparent',
-                  borderTop: '2px solid #667eea',
-                  borderRadius: '50%',
-                  animation: 'spin 1s linear infinite'
-                }} />
-              )}
-              <Save size={20} />
-              {createResponseMutation.isPending ? 'Saving...' : 'Save Draft'}
-            </button>
-            <button
-              onClick={handleSubmit}
-              disabled={isSubmitting || submitResponseMutation.isPending}
-              style={{
-                background: isSubmitting || submitResponseMutation.isPending
-                  ? '#9ca3af' 
-                  : 'linear-gradient(135deg, #667eea, #764ba2)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '12px',
-                padding: '0.75rem 1.5rem',
-                cursor: isSubmitting || submitResponseMutation.isPending ? 'not-allowed' : 'pointer',
-                fontWeight: '500',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                transition: 'all 0.2s ease',
-                opacity: isSubmitting || submitResponseMutation.isPending ? 0.7 : 1
-              }}
-            >
-              {(isSubmitting || submitResponseMutation.isPending) && (
-                <div style={{
-                  width: '16px',
-                  height: '16px',
-                  border: '2px solid transparent',
-                  borderTop: '2px solid white',
-                  borderRadius: '50%',
-                  animation: 'spin 1s linear infinite'
-                }} />
-              )}
-              <Send size={20} />
-              {isSubmitting || submitResponseMutation.isPending ? 'Submitting...' : 'Submit Survey'}
-            </button>
+            {/* Only show action buttons on last page */}
+            {isLastPage && (
+              <>
+                <button
+                  onClick={handleSave}
+                  disabled={createResponseMutation.isPending}
+                  style={{
+                    background: 'white',
+                    color: '#667eea',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '12px',
+                    padding: '0.75rem 1.5rem',
+                    cursor: createResponseMutation.isPending ? 'not-allowed' : 'pointer',
+                    fontWeight: '500',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    transition: 'all 0.2s ease',
+                    opacity: createResponseMutation.isPending ? 0.7 : 1
+                  }}
+                >
+                  {createResponseMutation.isPending && (
+                    <div style={{
+                      width: '16px',
+                      height: '16px',
+                      border: '2px solid transparent',
+                      borderTop: '2px solid #667eea',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }} />
+                  )}
+                  <Save size={20} />
+                  {createResponseMutation.isPending ? 'Saving...' : 'Save Draft'}
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting || submitResponseMutation.isPending}
+                  style={{
+                    background: isSubmitting || submitResponseMutation.isPending
+                      ? '#9ca3af' 
+                      : 'linear-gradient(135deg, #667eea, #764ba2)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    padding: '0.75rem 1.5rem',
+                    cursor: isSubmitting || submitResponseMutation.isPending ? 'not-allowed' : 'pointer',
+                    fontWeight: '500',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    transition: 'all 0.2s ease',
+                    opacity: isSubmitting || submitResponseMutation.isPending ? 0.7 : 1
+                  }}
+                >
+                  {(isSubmitting || submitResponseMutation.isPending) && (
+                    <div style={{
+                      width: '16px',
+                      height: '16px',
+                      border: '2px solid transparent',
+                      borderTop: '2px solid white',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }} />
+                  )}
+                  <Send size={20} />
+                  {isSubmitting || submitResponseMutation.isPending ? 'Submitting...' : 'Submit Survey'}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -760,7 +795,7 @@ const SurveyPage: React.FC = () => {
       <div style={{
         maxWidth: '1400px',
         margin: '0 auto',
-        padding: '2rem 1.5rem'
+        padding: '1rem'
       }}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -771,135 +806,124 @@ const SurveyPage: React.FC = () => {
             borderRadius: '16px',
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
             border: '1px solid rgba(226, 232, 240, 0.8)',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            maxHeight: 'calc(100vh - 2rem)',
+            display: 'flex',
+            flexDirection: 'column'
           }}
         >
-          {/* Form Header */}
-          <div style={{
-            padding: '2rem',
-            borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
-            background: 'rgba(248, 250, 252, 0.5)'
-          }}>
-            <h2 style={{
-              fontSize: '1.875rem',
-              fontWeight: '700',
-              color: '#1f2937',
-              marginBottom: '1rem'
-            }}>
-              {form.title}
-            </h2>
-            {form.description && (
-              <p style={{
-                fontSize: '1.125rem',
-                color: '#6b7280',
-                lineHeight: '1.6',
-                margin: 0
-              }}>
-                {form.description}
-              </p>
-            )}
-          </div>
 
           {/* Questions */}
-          <div style={{ padding: '2rem' }}>
+          <div style={{ 
+            padding: '0.5rem', 
+            flex: 1, 
+            display: 'flex', 
+            flexDirection: 'column',
+            overflow: 'auto'
+          }}>
             {form.questions?.length > 0 ? (
-              <div style={{ gap: '2rem', display: 'flex', flexDirection: 'column' }}>
-                {form.questions
-                  .sort((a: any, b: any) => a.order - b.order)
-                  .map((question: any, index: number) => (
+              <div style={{ 
+                gap: '1rem', 
+                display: 'flex', 
+                flexDirection: 'column',
+                flex: 1
+              }}>
+                {/* Current Question */}
+                {currentQuestion && (
                     <motion.div
-                      key={question.id}
+                      key={currentQuestion.id}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
+                      transition={{ delay: 0.1 }}
                       style={{
                         background: 'rgba(248, 250, 252, 0.5)',
                         border: '1px solid rgba(226, 232, 240, 0.8)',
-                        borderRadius: '16px',
-                        padding: '1.5rem',
-                        marginBottom: '1.5rem'
+                        borderRadius: '12px',
+                        padding: '1rem',
+                        marginBottom: '0.5rem'
                       }}
                     >
                       <div style={{
                         display: 'flex',
                         alignItems: 'flex-start',
-                        gap: '1rem',
-                        marginBottom: '1rem'
+                        gap: '0.75rem',
+                        marginBottom: '0.75rem'
                       }}>
                         <div style={{
                           background: '#667eea',
                           color: 'white',
-                          fontSize: '0.875rem',
+                          fontSize: '0.75rem',
                           fontWeight: '600',
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: '8px',
-                          minWidth: '40px',
+                          padding: '0.4rem 0.6rem',
+                          borderRadius: '6px',
+                          minWidth: '32px',
                           textAlign: 'center'
                         }}>
-                          {index + 1}
+                          {currentPage + 1}
                         </div>
                         <div style={{ flex: 1 }}>
                           <h3 style={{
-                            fontSize: '1.125rem',
+                            fontSize: '1rem',
                             fontWeight: '600',
                             color: '#1f2937',
-                            marginBottom: '0.5rem',
+                            marginBottom: '0.25rem',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '0.5rem'
+                            gap: '0.25rem',
+                            lineHeight: '1.3'
                           }}>
-                            {question.text}
-                            {question.required && (
+                            {currentQuestion.text}
+                            {currentQuestion.required && (
                               <span style={{
                                 color: '#ef4444',
-                                fontSize: '1rem'
+                                fontSize: '0.9rem'
                               }}>
                                 *
                               </span>
                             )}
                           </h3>
                           <p style={{
-                            fontSize: '0.875rem',
+                            fontSize: '0.75rem',
                             color: '#6b7280',
                             margin: 0,
                             textTransform: 'capitalize'
                           }}>
-                            {question.type.replace('_', ' ')} question
+                            {currentQuestion.type.replace('_', ' ')} question
                           </p>
                         </div>
                       </div>
                       
                       {/* Trader Performance Data */}
-                      {question.config?.traderPerformance && (
+                      {currentQuestion.config?.traderPerformance && (
                         <div style={{
                           background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
                           border: '1px solid #e2e8f0',
-                          borderRadius: '16px',
-                          padding: '1.5rem',
-                          marginBottom: '1.5rem',
-                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                          borderRadius: '12px',
+                          padding: '1rem',
+                          marginBottom: '1rem',
+                          boxShadow: '0 2px 4px -1px rgba(0, 0, 0, 0.1)'
                         }}>
                           <div style={{
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            gap: '0.75rem',
-                            marginBottom: '1.5rem'
+                            gap: '0.5rem',
+                            marginBottom: '1rem'
                           }}>
                             <div style={{
-                              width: '40px',
-                              height: '40px',
+                              width: '32px',
+                              height: '32px',
                               background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                              borderRadius: '12px',
+                              borderRadius: '8px',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              boxShadow: '0 4px 8px rgba(102, 126, 234, 0.3)'
+                              boxShadow: '0 2px 4px rgba(102, 126, 234, 0.3)'
                             }}>
-                              <span style={{ color: 'white', fontSize: '1rem' }}>📊</span>
+                              <span style={{ color: 'white', fontSize: '0.8rem' }}>📊</span>
                             </div>
                             <h4 style={{
-                              fontSize: '1.1rem',
+                              fontSize: '0.9rem',
                               fontWeight: '700',
                               color: '#1e293b',
                               margin: 0
@@ -909,41 +933,41 @@ const SurveyPage: React.FC = () => {
                           </div>
                           <div style={{ 
                             display: 'grid', 
-                            gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))', 
-                            gap: '0.75rem', 
-                            fontSize: '0.8rem',
-                            marginBottom: '1.5rem'
+                            gridTemplateColumns: 'repeat(6, 1fr)', 
+                            gap: '0.3rem', 
+                            fontSize: '0.65rem',
+                            marginBottom: '0.75rem'
                           }}>
-                            {question.config.traderPerformance.monthlyReturns.map((returnValue: number, monthIndex: number) => (
+                            {currentQuestion.config.traderPerformance.monthlyReturns.map((returnValue: number, monthIndex: number) => (
                               <div key={monthIndex} style={{
                                 textAlign: 'center',
-                                padding: '1rem 0.75rem',
+                                padding: '0.4rem 0.2rem',
                                 background: 'white',
                                 color: '#374151',
-                                borderRadius: '12px',
+                                borderRadius: '4px',
                                 fontWeight: '500',
                                 border: '1px solid #e5e7eb',
-                                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
                                 transition: 'all 0.2s ease',
                                 cursor: 'default'
                               }}>
-                                <div style={{ fontSize: '0.7rem', color: '#64748b', marginBottom: '0.5rem', fontWeight: '600' }}>
+                                <div style={{ fontSize: '0.55rem', color: '#64748b', marginBottom: '0.15rem', fontWeight: '600' }}>
                                   M{monthIndex + 1}
                                 </div>
                                 <div style={{ 
-                                  fontSize: '0.9rem',
+                                  fontSize: '0.7rem',
                                   fontWeight: '700',
                                   color: '#1e293b',
-                                  marginBottom: '0.25rem'
+                                  marginBottom: '0.1rem'
                                 }}>
-                                  {returnValue > 0 ? '+' : ''}{returnValue.toFixed(2)}%
+                                  {returnValue > 0 ? '+' : ''}{returnValue.toFixed(1)}%
                                 </div>
                                 <div style={{ 
-                                  fontSize: '0.7rem',
+                                  fontSize: '0.55rem',
                                   fontWeight: '600',
                                   color: '#6b7280'
                                 }}>
-                                  ₹{((returnValue / 100) * (question.config.traderPerformance.capital || 0)).toFixed(2)} Cr
+                                  ₹{((returnValue / 100) * (currentQuestion.config.traderPerformance.capital || 0)).toFixed(1)} Cr
                                 </div>
                               </div>
                             ))}
@@ -952,76 +976,246 @@ const SurveyPage: React.FC = () => {
                           {/* Trader Stats */}
                           <div style={{
                             display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-                            gap: '1rem'
+                            gridTemplateColumns: 'repeat(2, 1fr)',
+                            gap: '0.5rem',
+                            marginBottom: '0.5rem'
                           }}>
                             <div style={{
                               background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
                               border: '1px solid #bae6fd',
-                              borderRadius: '12px',
-                              padding: '1rem',
+                              borderRadius: '6px',
+                              padding: '0.5rem',
                               textAlign: 'center',
-                              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
                             }}>
-                              <div style={{ fontSize: '0.75rem', color: '#0369a1', fontWeight: '600', marginBottom: '0.25rem' }}>
+                              <div style={{ fontSize: '0.6rem', color: '#0369a1', fontWeight: '600', marginBottom: '0.1rem' }}>
                                 Trader Name
                               </div>
-                              <div style={{ fontSize: '1rem', fontWeight: '700', color: '#0c4a6e' }}>
-                                {question.config.traderPerformance.traderName}
+                              <div style={{ fontSize: '0.75rem', fontWeight: '700', color: '#0c4a6e' }}>
+                                {currentQuestion.config.traderPerformance.traderName}
                               </div>
                             </div>
                             <div style={{
                               background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
                               border: '1px solid #bbf7d0',
-                              borderRadius: '12px',
-                              padding: '1rem',
+                              borderRadius: '6px',
+                              padding: '0.5rem',
                               textAlign: 'center',
-                              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
                             }}>
-                              <div style={{ fontSize: '0.75rem', color: '#166534', fontWeight: '600', marginBottom: '0.25rem' }}>
+                              <div style={{ fontSize: '0.6rem', color: '#166534', fontWeight: '600', marginBottom: '0.1rem' }}>
                                 Capital
                               </div>
-                              <div style={{ fontSize: '1rem', fontWeight: '700', color: '#14532d' }}>
-                                ₹{question.config.traderPerformance.capital} Cr
+                              <div style={{ fontSize: '0.75rem', fontWeight: '700', color: '#14532d' }}>
+                                ₹{currentQuestion.config.traderPerformance.capital} Cr
                               </div>
                             </div>
                             <div style={{
                               background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
                               border: '1px solid #fbbf24',
-                              borderRadius: '12px',
-                              padding: '1rem',
+                              borderRadius: '6px',
+                              padding: '0.5rem',
                               textAlign: 'center',
-                              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
                             }}>
-                              <div style={{ fontSize: '0.75rem', color: '#d97706', fontWeight: '600', marginBottom: '0.25rem' }}>
+                              <div style={{ fontSize: '0.6rem', color: '#d97706', fontWeight: '600', marginBottom: '0.1rem' }}>
                                 Mean Return
                               </div>
-                              <div style={{ fontSize: '1rem', fontWeight: '700', color: '#92400e' }}>
-                                {question.config.traderPerformance.mean >= 0 ? '+' : ''}{question.config.traderPerformance.mean}%
+                              <div style={{ fontSize: '0.75rem', fontWeight: '700', color: '#92400e' }}>
+                                {currentQuestion.config.traderPerformance.mean >= 0 ? '+' : ''}{currentQuestion.config.traderPerformance.mean}%
                               </div>
                             </div>
                             <div style={{
                               background: 'linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%)',
                               border: '1px solid #c4b5fd',
-                              borderRadius: '12px',
-                              padding: '1rem',
+                              borderRadius: '6px',
+                              padding: '0.5rem',
                               textAlign: 'center',
-                              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
                             }}>
-                              <div style={{ fontSize: '0.75rem', color: '#7c3aed', fontWeight: '600', marginBottom: '0.25rem' }}>
+                              <div style={{ fontSize: '0.6rem', color: '#7c3aed', fontWeight: '600', marginBottom: '0.1rem' }}>
                                 Std Deviation
                               </div>
-                              <div style={{ fontSize: '1rem', fontWeight: '700', color: '#5b21b6' }}>
-                                {question.config.traderPerformance.stdDev}%
+                              <div style={{ fontSize: '0.75rem', fontWeight: '700', color: '#5b21b6' }}>
+                                {currentQuestion.config.traderPerformance.stdDev}%
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Max Drawdown Card */}
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'center'
+                          }}>
+                            <div style={{
+                              background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
+                              border: '1px solid #fca5a5',
+                              borderRadius: '6px',
+                              padding: '0.5rem',
+                              textAlign: 'center',
+                              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+                              width: '100%',
+                              maxWidth: '200px'
+                            }}>
+                              <div style={{ fontSize: '0.6rem', color: '#dc2626', fontWeight: '600', marginBottom: '0.1rem' }}>
+                                Max Drawdown
+                              </div>
+                              <div style={{ fontSize: '0.75rem', fontWeight: '700', color: '#991b1b' }}>
+                                {currentQuestion.config.traderPerformance.maxDrawdown || '0.00'}%
                               </div>
                             </div>
                           </div>
                         </div>
                       )}
                       
-                      {renderQuestion(question)}
+                      {/* Question Input - Special handling for trader performance */}
+                      {currentQuestion.config?.traderPerformance ? (
+                        <div style={{
+                          background: 'white',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          padding: '0.75rem',
+                          marginTop: '0.75rem'
+                        }}>
+                          <label style={{
+                            display: 'block',
+                            fontSize: '0.8rem',
+                            fontWeight: '600',
+                            color: '#374151',
+                            marginBottom: '0.4rem'
+                          }}>
+                            Rate this trader's performance (1-10):
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="10"
+                            value={answers[currentQuestion.id] || ''}
+                            onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
+                            placeholder="Enter rating from 1 to 10..."
+                            style={{
+                              width: '100%',
+                              padding: '10px 12px',
+                              border: '1px solid #d1d5db',
+                              borderRadius: '6px',
+                              fontSize: '0.9rem',
+                              background: 'white',
+                              transition: 'all 0.2s ease',
+                              outline: 'none',
+                              fontFamily: 'inherit'
+                            }}
+                            onFocus={(e) => {
+                              e.target.style.borderColor = '#667eea';
+                              e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+                            }}
+                            onBlur={(e) => {
+                              e.target.style.borderColor = '#d1d5db';
+                              e.target.style.boxShadow = 'none';
+                            }}
+                          />
+                          <p style={{
+                            fontSize: '0.7rem',
+                            color: '#6b7280',
+                            margin: '0.4rem 0 0 0'
+                          }}>
+                            Rate from 1 (poor performance) to 10 (excellent performance)
+                          </p>
+                        </div>
+                      ) : (
+                        renderQuestion(currentQuestion)
+                      )}
                     </motion.div>
-                  ))}
+                )}
+
+                {/* Pagination Controls */}
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.75rem',
+                  padding: '1rem',
+                  background: 'rgba(255, 255, 255, 0.95)',
+                  borderRadius: '12px',
+                  marginTop: '0.5rem',
+                  position: 'sticky',
+                  bottom: '0',
+                  zIndex: 10
+                }}>
+                  {/* Page Indicators */}
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    alignItems: 'center'
+                  }}>
+                    {Array.from({ length: totalPages }, (_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => goToPage(index)}
+                        style={{
+                          width: '12px',
+                          height: '12px',
+                          borderRadius: '50%',
+                          border: 'none',
+                          background: index === currentPage ? '#667eea' : '#d1d5db',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease'
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Navigation Buttons */}
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '0.75rem'
+                  }}>
+                    <button
+                      onClick={goToPreviousPage}
+                      disabled={isFirstPage}
+                      style={{
+                        background: isFirstPage ? '#f3f4f6' : 'linear-gradient(135deg, #667eea, #764ba2)',
+                        color: isFirstPage ? '#9ca3af' : 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '0.6rem 1rem',
+                        cursor: isFirstPage ? 'not-allowed' : 'pointer',
+                        fontSize: '0.8rem',
+                        fontWeight: '500',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.25rem',
+                        transition: 'all 0.2s ease',
+                        flex: 1
+                      }}
+                    >
+                      ← Previous
+                    </button>
+
+                    <button
+                      onClick={goToNextPage}
+                      disabled={isLastPage}
+                      style={{
+                        background: isLastPage ? '#f3f4f6' : 'linear-gradient(135deg, #667eea, #764ba2)',
+                        color: isLastPage ? '#9ca3af' : 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '0.6rem 1rem',
+                        cursor: isLastPage ? 'not-allowed' : 'pointer',
+                        fontSize: '0.8rem',
+                        fontWeight: '500',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.25rem',
+                        transition: 'all 0.2s ease',
+                        flex: 1
+                      }}
+                    >
+                      Next →
+                    </button>
+                  </div>
+                </div>
               </div>
             ) : (
               <div style={{

@@ -25,8 +25,11 @@ interface RiskAnalysisResult {
   userEmail: string;
   responses: number[];
   normalizedResponses: number[];
+  alpha: number;
+  beta1: number;
+  beta2: number;
   riskAversionCoefficient: number;
-  riskClassification: 'Very Conservative' | 'Conservative' | 'Moderate' | 'Aggressive' | 'Very Aggressive';
+  riskClassification: 'Very Risk Averse' | 'Mild Risk Aversion' | 'Low Risk Aversion' | 'Risk Neutral' | 'Risk seeking';
   rSquared: number;
   meanResponse: number;
   stdDevResponse: number;
@@ -35,12 +38,15 @@ interface RiskAnalysisResult {
 interface AnalysisSummary {
   totalUsers: number;
   averageRiskCoefficient: number;
+  averageAlpha: number;
+  averageBeta1: number;
+  averageBeta2: number;
   classificationDistribution: {
-    'Very Conservative': number;
-    'Conservative': number;
-    'Moderate': number;
-    'Aggressive': number;
-    'Very Aggressive': number;
+    'Very Risk Averse': number;
+    'Mild Risk Aversion': number;
+    'Low Risk Aversion': number;
+    'Risk Neutral': number;
+    'Risk seeking': number;
   };
   averageRSquared: number;
 }
@@ -64,7 +70,7 @@ export default function RiskAnalysisPage() {
   const { data: responses, isLoading: responsesLoading, refetch: refetchResponses } = useQuery({
     queryKey: ['admin-responses'],
     queryFn: () => api.get('/responses').then(res => res.data),
-    enabled: !!user && (user.role === 'admin' || user.role === 'super_admin'),
+    enabled: !!user && (user.role === 'admin' || user.role !== 'super_admin'),
   });
 
   // Risk analysis mutation
@@ -92,198 +98,39 @@ export default function RiskAnalysisPage() {
 
     setIsAnalyzing(true);
     try {
-      // Perform client-side analysis
-      const results = await performRiskAnalysis(responses);
-      setAnalysisResults(results);
-      
-      // Calculate summary
-      const summary = calculateAnalysisSummary(results);
-      setAnalysisSummary(summary);
-      
-      toast.success(`Risk analysis completed for ${results.length} users!`);
-    } catch (error) {
-      console.error('Analysis error:', error);
-      toast.error('Failed to perform risk analysis');
+      await analyzeRiskMutation.mutateAsync();
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const performRiskAnalysis = async (responses: any[]): Promise<RiskAnalysisResult[]> => {
-    // Group responses by user
-    const userResponses = new Map<string, any[]>();
-    
-    responses.forEach(response => {
-      if (!userResponses.has(response.userId)) {
-        userResponses.set(response.userId, []);
-      }
-      userResponses.get(response.userId)!.push(response);
-    });
-
-    const results: RiskAnalysisResult[] = [];
-
-    for (const [userId, userResponseList] of Array.from(userResponses.entries())) {
-      // Get user info
-      const userInfo = userResponseList[0].user;
-      
-      // Extract trader performance responses (ratings 1-10)
-      const traderResponses: number[] = [];
-      
-      userResponseList.forEach((response: any) => {
-        response.answers?.forEach((answer: any) => {
-          if (answer.question?.config?.traderPerformance && answer.value) {
-            const rating = parseInt(answer.value);
-            if (!isNaN(rating) && rating >= 1 && rating <= 10) {
-              traderResponses.push(rating);
-            }
-          }
-        });
-      });
-
-      if (traderResponses.length === 0) continue;
-
-      // Calculate statistics
-      const mean = traderResponses.reduce((sum, val) => sum + val, 0) / traderResponses.length;
-      const variance = traderResponses.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / traderResponses.length;
-      const stdDev = Math.sqrt(variance);
-
-      // Z-score normalization
-      const normalizedResponses = traderResponses.map(val => (val - mean) / stdDev);
-
-      // OLS Regression: rating = a + b * (expected_return - risk)
-      // For simplicity, we'll use the trader performance data to create features
-      const features: number[] = [];
-      const targets: number[] = [];
-
-      userResponseList.forEach((response: any) => {
-        response.answers?.forEach((answer: any) => {
-          if (answer.question?.config?.traderPerformance && answer.value) {
-            const rating = parseInt(answer.value);
-            const traderData = answer.question.config.traderPerformance;
-            
-            // Create feature: expected return - risk (using mean and std dev)
-            const expectedReturn = traderData.mean;
-            const risk = traderData.stdDev;
-            const feature = expectedReturn - risk; // Risk-adjusted return
-            
-            features.push(feature);
-            targets.push(rating);
-          }
-        });
-      });
-
-      if (features.length < 2) continue;
-
-      // Simple OLS regression
-      const { coefficient, rSquared } = performOLSRegression(features, targets);
-      
-      // Risk classification based on coefficient
-      const riskClassification = classifyRiskAversion(coefficient);
-
-      results.push({
-        userId,
-        userName: userInfo.name,
-        userEmail: userInfo.email,
-        responses: traderResponses,
-        normalizedResponses,
-        riskAversionCoefficient: coefficient,
-        riskClassification,
-        rSquared,
-        meanResponse: mean,
-        stdDevResponse: stdDev
-      });
-    }
-
-    return results.sort((a, b) => b.riskAversionCoefficient - a.riskAversionCoefficient);
-  };
-
-  const performOLSRegression = (x: number[], y: number[]): { coefficient: number; rSquared: number } => {
-    const n = x.length;
-    const sumX = x.reduce((sum, val) => sum + val, 0);
-    const sumY = y.reduce((sum, val) => sum + val, 0);
-    const sumXY = x.reduce((sum, val, i) => sum + val * y[i], 0);
-    const sumXX = x.reduce((sum, val) => sum + val * val, 0);
-    const sumYY = y.reduce((sum, val) => sum + val * val, 0);
-
-    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-    const intercept = (sumY - slope * sumX) / n;
-
-    // Calculate R-squared
-    const yMean = sumY / n;
-    const ssRes = y.reduce((sum, val, i) => sum + Math.pow(val - (intercept + slope * x[i]), 2), 0);
-    const ssTot = y.reduce((sum, val) => sum + Math.pow(val - yMean, 2), 0);
-    const rSquared = 1 - (ssRes / ssTot);
-
-    return { coefficient: slope, rSquared: Math.max(0, rSquared) };
-  };
-
-  const classifyRiskAversion = (coefficient: number): RiskAnalysisResult['riskClassification'] => {
-    if (coefficient <= -0.5) return 'Very Conservative';
-    if (coefficient <= -0.2) return 'Conservative';
-    if (coefficient <= 0.2) return 'Moderate';
-    if (coefficient <= 0.5) return 'Aggressive';
-    return 'Very Aggressive';
-  };
-
-  const calculateAnalysisSummary = (results: RiskAnalysisResult[]): AnalysisSummary => {
-    const totalUsers = results.length;
-    const averageRiskCoefficient = results.reduce((sum, r) => sum + r.riskAversionCoefficient, 0) / totalUsers;
-    const averageRSquared = results.reduce((sum, r) => sum + r.rSquared, 0) / totalUsers;
-
-    const classificationDistribution = {
-      'Very Conservative': 0,
-      'Conservative': 0,
-      'Moderate': 0,
-      'Aggressive': 0,
-      'Very Aggressive': 0
-    };
-
-    results.forEach(result => {
-      classificationDistribution[result.riskClassification]++;
-    });
-
-    return {
-      totalUsers,
-      averageRiskCoefficient,
-      classificationDistribution,
-      averageRSquared
-    };
-  };
-
-  const getRiskColor = (classification: RiskAnalysisResult['riskClassification']): string => {
+  const getRiskColor = (classification: RiskAnalysisResult['riskClassification']) => {
     switch (classification) {
-      case 'Very Conservative': return '#dc2626'; // Red
-      case 'Conservative': return '#f59e0b'; // Amber
-      case 'Moderate': return '#6366f1'; // Indigo
-      case 'Aggressive': return '#10b981'; // Emerald
-      case 'Very Aggressive': return '#8b5cf6'; // Violet
+      case 'Very Risk Averse': return '#ef4444';
+      case 'Mild Risk Aversion': return '#f59e0b';
+      case 'Low Risk Aversion': return '#3b82f6';
+      case 'Risk Neutral': return '#10b981';
+      case 'Risk seeking': return '#8b5cf6';
       default: return '#6b7280';
     }
   };
 
-  const exportAnalysis = () => {
-    const exportData = {
-      summary: analysisSummary,
-      results: analysisResults,
-      generatedAt: new Date().toISOString()
-    };
-
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `risk-analysis-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const getRiskDisplayName = (classification: RiskAnalysisResult['riskClassification']): string => {
+    switch (classification) {
+      case 'Very Risk Averse': return 'Very Risk Averse (संतोषी)';
+      case 'Mild Risk Aversion': return 'Mild Risk Aversion (जोखिमों का चुनाव करने वाला)';
+      case 'Low Risk Aversion': return 'Low Risk Aversion (विकास प्रेमी संशय)';
+      case 'Risk Neutral': return 'Risk Neutral (समशीतोष्ण)';
+      case 'Risk seeking': return 'Risk seeking (संशय प्रेमी)';
+      default: return classification;
+    }
   };
 
-  if (authLoading || responsesLoading) {
+  if (authLoading) {
     return (
       <div style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center'
@@ -300,839 +147,926 @@ export default function RiskAnalysisPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      padding: '2rem'
+      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif'
     }}>
-      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{
-            background: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(10px)',
-            borderRadius: '20px',
-            padding: '2rem',
-            marginBottom: '2rem',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
-            border: '1px solid rgba(255, 255, 255, 0.2)'
-          }}
-        >
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '1.5rem'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <button
-                onClick={() => router.push('/admin/dashboard')}
-                style={{
-                  background: 'linear-gradient(135deg, #f3f4f6, #e5e7eb)',
-                  border: 'none',
-                  borderRadius: '12px',
-                  padding: '0.75rem',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <ArrowLeft size={20} color="#374151" />
-              </button>
-              <div>
-                <h1 style={{
-                  fontSize: '1.875rem',
-                  fontWeight: '700',
-                  color: '#1f2937',
-                  margin: 0,
-                  background: 'linear-gradient(135deg, #1f2937, #374151)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text'
-                }}>
-                  Risk Aversion Analysis
-                </h1>
-                <p style={{
-                  fontSize: '1rem',
-                  color: '#6b7280',
-                  margin: '0.25rem 0 0 0'
-                }}>
-                  Z-score normalization and OLS regression analysis
-                </p>
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <button
-                onClick={handleAnalyzeRisk}
-                disabled={isAnalyzing || !responses || responses.length === 0}
-                style={{
-                  background: isAnalyzing 
-                    ? '#9ca3af' 
-                    : 'linear-gradient(135deg, #667eea, #764ba2)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '12px',
-                  padding: '0.75rem 1.5rem',
-                  cursor: isAnalyzing ? 'not-allowed' : 'pointer',
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                {isAnalyzing ? <RefreshCw size={16} className="animate-spin" /> : <Brain size={16} />}
-                {isAnalyzing ? 'Analyzing...' : 'Analyze Risk'}
-              </button>
-              {analysisResults.length > 0 && (
-                <button
-                  onClick={exportAnalysis}
-                  style={{
-                    background: 'linear-gradient(135deg, #10b981, #059669)',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '12px',
-                    padding: '0.75rem 1.5rem',
-                    cursor: 'pointer',
-                    fontSize: '0.875rem',
-                    fontWeight: '500',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  <Download size={16} />
-                  Export
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Stats Cards */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '1rem'
-          }}>
+      {/* Header */}
+      <header style={{
+        background: 'rgba(255, 255, 255, 0.95)',
+        backdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
+        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 50
+      }}>
+        <div style={{
+          maxWidth: '1400px',
+          margin: '0 auto',
+          padding: '0 1rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          height: '3.5rem',
+          flexWrap: 'wrap',
+          gap: '0.5rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: '0', flex: '1' }}>
+            <button
+              onClick={() => router.back()}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#6b7280',
+                cursor: 'pointer',
+                padding: '0.375rem',
+                borderRadius: '6px',
+                transition: 'all 0.2s ease',
+                flexShrink: 0
+              }}
+            >
+              <ArrowLeft size={18} />
+            </button>
             <div style={{
-              background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-              border: '1px solid #bae6fd',
-              borderRadius: '12px',
-              padding: '1.5rem',
+              width: '32px',
+              height: '32px',
+              background: 'linear-gradient(135deg, #667eea, #764ba2)',
+              borderRadius: '8px',
               display: 'flex',
               alignItems: 'center',
-              gap: '1rem'
+              justifyContent: 'center',
+              flexShrink: 0
             }}>
-              <div style={{
-                width: '48px',
-                height: '48px',
-                background: 'linear-gradient(135deg, #0ea5e9, #0284c7)',
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <Users size={24} color="white" />
-              </div>
-              <div>
-                <h3 style={{
-                  fontSize: '1.125rem',
-                  fontWeight: '600',
-                  color: '#0c4a6e',
-                  margin: '0 0 0.25rem 0'
-                }}>
-                  {responses?.length || 0}
-                </h3>
-                <p style={{
-                  fontSize: '0.875rem',
-                  color: '#0369a1',
-                  margin: 0
-                }}>
-                  Total Responses
-                </p>
-              </div>
+              <BarChart3 size={18} color="white" />
             </div>
-
-            <div style={{
-              background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
-              border: '1px solid #bbf7d0',
-              borderRadius: '12px',
-              padding: '1.5rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1rem'
-            }}>
-              <div style={{
-                width: '48px',
-                height: '48px',
-                background: 'linear-gradient(135deg, #22c55e, #16a34a)',
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
+            <div style={{ minWidth: '0', flex: '1' }}>
+              <h1 style={{
+                fontSize: '1.125rem',
+                fontWeight: '700',
+                color: '#1f2937',
+                margin: 0,
+                lineHeight: '1.2'
               }}>
-                <BarChart3 size={24} color="white" />
-              </div>
-              <div>
-                <h3 style={{
-                  fontSize: '1.125rem',
-                  fontWeight: '600',
-                  color: '#14532d',
-                  margin: '0 0 0.25rem 0'
-                }}>
-                  {analysisResults.length}
-                </h3>
-                <p style={{
-                  fontSize: '0.875rem',
-                  color: '#166534',
-                  margin: 0
-                }}>
-                  Analyzed Users
-                </p>
-              </div>
+                Risk Analysis
+              </h1>
+              <p style={{
+                fontSize: '0.75rem',
+                color: '#6b7280',
+                margin: 0,
+                lineHeight: '1.3',
+                display: 'none'
+              }}>
+                Z-score normalization and multivariate OLS regression
+              </p>
             </div>
-
-            {analysisSummary && (
-              <>
-                <div style={{
-                  background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-                  border: '1px solid #fbbf24',
-                  borderRadius: '12px',
-                  padding: '1.5rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '1rem'
-                }}>
-                  <div style={{
-                    width: '48px',
-                    height: '48px',
-                    background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                    borderRadius: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <TrendingUp size={24} color="white" />
-                  </div>
-                  <div>
-                    <h3 style={{
-                      fontSize: '1.125rem',
-                      fontWeight: '600',
-                      color: '#92400e',
-                      margin: '0 0 0.25rem 0'
-                    }}>
-                      {analysisSummary.averageRiskCoefficient.toFixed(3)}
-                    </h3>
-                    <p style={{
-                      fontSize: '0.875rem',
-                      color: '#d97706',
-                      margin: 0
-                    }}>
-                      Avg Risk Coefficient
-                    </p>
-                  </div>
-                </div>
-
-                <div style={{
-                  background: 'linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%)',
-                  border: '1px solid #c4b5fd',
-                  borderRadius: '12px',
-                  padding: '1.5rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '1rem'
-                }}>
-                  <div style={{
-                    width: '48px',
-                    height: '48px',
-                    background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-                    borderRadius: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <Target size={24} color="white" />
-                  </div>
-                  <div>
-                    <h3 style={{
-                      fontSize: '1.125rem',
-                      fontWeight: '600',
-                      color: '#581c87',
-                      margin: '0 0 0.25rem 0'
-                    }}>
-                      {(analysisSummary.averageRSquared * 100).toFixed(1)}%
-                    </h3>
-                    <p style={{
-                      fontSize: '0.875rem',
-                      color: '#7c3aed',
-                      margin: 0
-                    }}>
-                      Avg R² Score
-                    </p>
-                  </div>
-                </div>
-              </>
-            )}
           </div>
-        </motion.div>
+          
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '0.5rem',
+            flexWrap: 'wrap'
+          }}>
+            <button
+              onClick={handleAnalyzeRisk}
+              disabled={isAnalyzing || !responses || responses.length === 0}
+              style={{
+                background: isAnalyzing ? '#9ca3af' : 'linear-gradient(135deg, #667eea, #764ba2)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '0.5rem 0.75rem',
+                cursor: isAnalyzing ? 'not-allowed' : 'pointer',
+                fontWeight: '500',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.375rem',
+                transition: 'all 0.2s ease',
+                fontSize: '0.875rem'
+              }}
+            >
+              {isAnalyzing ? <RefreshCw size={16} className="animate-spin" /> : <Brain size={16} />}
+              <span style={{ display: 'none' }}>Analyze</span>
+            </button>
+            <button
+              style={{
+                background: 'white',
+                color: '#10b981',
+                border: '1px solid #d1d5db',
+                borderRadius: '8px',
+                padding: '0.5rem',
+                cursor: 'pointer',
+                fontWeight: '500',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.375rem',
+                transition: 'all 0.2s ease',
+                fontSize: '0.875rem'
+              }}
+            >
+              <Download size={16} />
+              <span style={{ display: 'none' }}>Export</span>
+            </button>
+          </div>
+        </div>
+      </header>
 
-        {/* Analysis Results */}
-        {analysisResults.length > 0 && (
+      <div style={{
+        maxWidth: '1400px',
+        margin: '0 auto',
+        padding: '1rem'
+      }}>
+        {/* Summary Stats */}
+        {analysisSummary && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
             style={{
-              background: 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'blur(10px)',
-              borderRadius: '20px',
-              padding: '2rem',
-              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
-              border: '1px solid rgba(255, 255, 255, 0.2)'
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+              gap: '1rem',
+              marginBottom: '1.5rem'
             }}
           >
             <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '2rem'
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(20px)',
+              borderRadius: '12px',
+              padding: '1rem',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+              border: '1px solid rgba(226, 232, 240, 0.8)'
             }}>
-              <h2 style={{
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '0.75rem'
+              }}>
+                <h3 style={{
+                  fontSize: '0.75rem',
+                  fontWeight: '500',
+                  color: '#6b7280',
+                  margin: 0
+                }}>
+                  Total Responses
+                </h3>
+                <Users size={16} color="#3b82f6" />
+              </div>
+              <p style={{
                 fontSize: '1.5rem',
                 fontWeight: '700',
                 color: '#1f2937',
                 margin: 0
               }}>
-                Risk Aversion Scatter Plot
-              </h2>
-              <button
-                onClick={() => setShowDetails(!showDetails)}
-                style={{
-                  background: 'linear-gradient(135deg, #f3f4f6, #e5e7eb)',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '0.5rem 1rem',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
-                  color: '#374151'
-                }}
-              >
-                {showDetails ? 'Hide Details' : 'Show Details'}
-              </button>
+                {responses?.length || 0}
+              </p>
             </div>
 
-            {/* Scatter Plot */}
             <div style={{
-              background: 'white',
-              border: '1px solid #e5e7eb',
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(20px)',
               borderRadius: '12px',
-              padding: '2rem',
-              marginBottom: '2rem',
-              minHeight: '500px',
-              position: 'relative'
+              padding: '1rem',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+              border: '1px solid rgba(226, 232, 240, 0.8)'
             }}>
               <div style={{
-                fontSize: '1.25rem',
-                fontWeight: '600',
-                color: '#374151',
-                textAlign: 'center',
-                marginBottom: '1.5rem'
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '0.75rem'
               }}>
-                Risk Aversion Scatter Plot
+                <h3 style={{
+                  fontSize: '0.75rem',
+                  fontWeight: '500',
+                  color: '#6b7280',
+                  margin: 0
+                }}>
+                  Analyzed Users
+                </h3>
+                <BarChart3 size={16} color="#10b981" />
               </div>
-              
-              {/* Scatter Plot Container */}
-              <div style={{
-                position: 'relative',
-                width: '100%',
-                height: '400px',
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-                background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
-                overflow: 'hidden'
+              <p style={{
+                fontSize: '1.5rem',
+                fontWeight: '700',
+                color: '#1f2937',
+                margin: 0
               }}>
+                {analysisSummary.totalUsers}
+              </p>
+            </div>
+
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(20px)',
+              borderRadius: '12px',
+              padding: '1rem',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+              border: '1px solid rgba(226, 232, 240, 0.8)'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '0.75rem'
+              }}>
+                <h3 style={{
+                  fontSize: '0.75rem',
+                  fontWeight: '500',
+                  color: '#6b7280',
+                  margin: 0
+                }}>
+                  Avg Risk Coefficient
+                </h3>
+                <TrendingUp size={16} color="#f59e0b" />
+              </div>
+              <p style={{
+                fontSize: '1.5rem',
+                fontWeight: '700',
+                color: '#1f2937',
+                margin: 0
+              }}>
+                {analysisSummary.averageRiskCoefficient.toFixed(3)}
+              </p>
+            </div>
+
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(20px)',
+              borderRadius: '12px',
+              padding: '1rem',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+              border: '1px solid rgba(226, 232, 240, 0.8)'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '0.75rem'
+              }}>
+                <h3 style={{
+                  fontSize: '0.75rem',
+                  fontWeight: '500',
+                  color: '#6b7280',
+                  margin: 0
+                }}>
+                  Avg Alpha
+                </h3>
+                <AlertCircle size={16} color="#ef4444" />
+              </div>
+              <p style={{
+                fontSize: '1.5rem',
+                fontWeight: '700',
+                color: '#1f2937',
+                margin: 0
+              }}>
+                {analysisSummary.averageAlpha.toFixed(3)}
+              </p>
+            </div>
+
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(20px)',
+              borderRadius: '12px',
+              padding: '1rem',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+              border: '1px solid rgba(226, 232, 240, 0.8)'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '0.75rem'
+              }}>
+                <h3 style={{
+                  fontSize: '0.75rem',
+                  fontWeight: '500',
+                  color: '#6b7280',
+                  margin: 0
+                }}>
+                  Avg Beta1
+                </h3>
+                <TrendingUp size={16} color="#10b981" />
+              </div>
+              <p style={{
+                fontSize: '1.5rem',
+                fontWeight: '700',
+                color: '#1f2937',
+                margin: 0
+              }}>
+                {analysisSummary.averageBeta1.toFixed(3)}
+              </p>
+            </div>
+
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(20px)',
+              borderRadius: '12px',
+              padding: '1rem',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+              border: '1px solid rgba(226, 232, 240, 0.8)'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '0.75rem'
+              }}>
+                <h3 style={{
+                  fontSize: '0.75rem',
+                  fontWeight: '500',
+                  color: '#6b7280',
+                  margin: 0
+                }}>
+                  Avg Beta2
+                </h3>
+                <BarChart3 size={16} color="#3b82f6" />
+              </div>
+              <p style={{
+                fontSize: '1.5rem',
+                fontWeight: '700',
+                color: '#1f2937',
+                margin: 0
+              }}>
+                {analysisSummary.averageBeta2.toFixed(3)}
+              </p>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Simple Scatter Plot */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          style={{
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: '12px',
+            padding: '1rem',
+            marginBottom: '1.5rem',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            border: '1px solid rgba(226, 232, 240, 0.8)'
+          }}
+        >
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '1rem',
+            flexWrap: 'wrap',
+            gap: '0.5rem'
+          }}>
+            <h3 style={{
+              fontSize: '1rem',
+              fontWeight: '600',
+              color: '#1f2937',
+              margin: 0
+            }}>
+              Risk Aversion Scatter Plot
+            </h3>
+            <button
+              onClick={() => setShowDetails(!showDetails)}
+              style={{
+                background: 'white',
+                color: '#667eea',
+                border: '1px solid #d1d5db',
+                borderRadius: '8px',
+                padding: '0.5rem 0.75rem',
+                cursor: 'pointer',
+                fontWeight: '500',
+                transition: 'all 0.2s ease',
+                fontSize: '0.875rem'
+              }}
+            >
+              {showDetails ? 'Hide' : 'Show'} Details
+            </button>
+          </div>
+
+          {/* Simple Plot Area */}
+          <div style={{
+            width: '100%',
+            height: '300px',
+            border: '1px solid #e5e7eb',
+            borderRadius: '6px',
+            background: 'white',
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            {analysisResults.length === 0 ? (
+              <div style={{
+                textAlign: 'center',
+                color: '#6b7280',
+                fontSize: '1rem'
+              }}>
+                No data points to display. Click "Analyze Risk" to generate the scatter plot.
+              </div>
+            ) : (
+              <div style={{
+                width: '100%',
+                height: '100%',
+                position: 'relative',
+                background: '#f8fafc',
+                borderRadius: '4px'
+              }}>
+                
+                {/* Data points */}
+                {analysisResults.map((result, index) => {
+                  // Simple positioning: X based on category, Y based on risk coefficient
+                  const categoryPositions = {
+                    'Very Risk Averse': 0.1,
+                    'Mild Risk Aversion': 0.3,
+                    'Low Risk Aversion': 0.5,
+                    'Risk Neutral': 0.7,
+                    'Risk seeking': 0.9
+                  };
+                  
+                  const xPos = (categoryPositions[result.riskClassification] || 0.5) * 100;
+                  const yPos = Math.max(10, Math.min(90, 50 - (result.riskAversionCoefficient * 10)));
+                  
+                  return (
+                    <div
+                      key={result.userId}
+                      style={{
+                        position: 'absolute',
+                        left: `${xPos}%`,
+                        top: `${yPos}%`,
+                        transform: 'translate(-50%, -50%)',
+                        zIndex: 10
+                      }}
+                    >
+                      {/* User label */}
+                      <div style={{
+                        background: 'rgba(0, 0, 0, 0.8)',
+                        color: 'white',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        marginBottom: '4px',
+                        whiteSpace: 'nowrap',
+                        textAlign: 'center'
+                      }}>
+                        {result.userName}
+                        <br />
+                        <span style={{ fontSize: '10px', opacity: 0.8 }}>
+                          α: {result.alpha.toFixed(3)}
+                        </span>
+                      </div>
+                      
+                      {/* Data point */}
+                      <div
+                        style={{
+                          width: '16px',
+                          height: '16px',
+                          background: getRiskColor(result.riskClassification),
+                          borderRadius: '50%',
+                          border: '2px solid white',
+                          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+                          cursor: 'pointer'
+                        }}
+                        title={`${result.userName}: Risk Coeff: ${result.riskAversionCoefficient.toFixed(3)}, Alpha: ${result.alpha.toFixed(3)}`}
+                      />
+                    </div>
+                  );
+                })}
+                
                 {/* Y-axis labels */}
                 <div style={{
                   position: 'absolute',
-                  left: '0',
+                  left: '10px',
                   top: '0',
-                  height: '100%',
-                  width: '40px',
+                  bottom: '0',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  padding: '1rem 0.5rem',
-                  fontSize: '0.75rem',
-                  color: '#6b7280',
-                  fontWeight: '500'
+                  padding: '20px 0',
+                  fontSize: '12px',
+                  color: '#6b7280'
                 }}>
-                  <div>1.0</div>
-                  <div>0.5</div>
+                  <div>3.0</div>
+                  <div>1.5</div>
                   <div>0.0</div>
-                  <div>-0.5</div>
-                  <div>-1.0</div>
+                  <div>-1.5</div>
+                  <div>-3.0</div>
                 </div>
-
-                {/* X-axis labels */}
+                
+                {/* X-axis color partitions */}
                 <div style={{
                   position: 'absolute',
                   bottom: '0',
-                  left: '40px',
+                  left: '0',
                   right: '0',
-                  height: '30px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.75rem',
-                  color: '#6b7280',
-                  fontWeight: '500'
+                  height: '25px',
+                  display: 'flex'
                 }}>
-                  Users (ordered by risk coefficient)
-                </div>
-
-                {/* X-axis tick marks for users */}
-                {analysisResults.length > 1 && (
+                  {/* Very Risk Averse */}
                   <div style={{
-                    position: 'absolute',
-                    bottom: '30px',
-                    left: '50px',
-                    right: '20px',
-                    height: '10px',
+                    flex: 1,
+                    background: '#ef4444',
+                    opacity: 0.2,
+                    borderRight: '1px solid #ef4444',
                     display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start'
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '10px',
+                    fontWeight: '500',
+                    color: '#ef4444',
+                    textAlign: 'center',
+                    lineHeight: '1.2'
                   }}>
-                    {analysisResults.map((_, index) => (
-                      <div
-                        key={index}
-                        style={{
-                          width: '1px',
-                          height: '6px',
-                          background: '#d1d5db',
-                          position: 'relative'
-                        }}
-                      >
-                        <div style={{
-                          position: 'absolute',
-                          top: '8px',
-                          left: '50%',
-                          transform: 'translateX(-50%)',
-                          fontSize: '0.65rem',
-                          color: '#9ca3af',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          {index + 1}
-                        </div>
-                      </div>
-                    ))}
+                    Very Risk Averse
                   </div>
-                )}
-
-                {/* Y-axis line */}
-                <div style={{
-                  position: 'absolute',
-                  left: '40px',
-                  top: '0',
-                  bottom: '30px',
-                  width: '1px',
-                  background: '#d1d5db'
-                }} />
-
-                {/* X-axis line */}
-                <div style={{
-                  position: 'absolute',
-                  left: '40px',
-                  right: '0',
-                  bottom: '30px',
-                  height: '1px',
-                  background: '#d1d5db'
-                }} />
-
-                {/* Zero line */}
-                <div style={{
-                  position: 'absolute',
-                  left: '40px',
-                  right: '0',
-                  top: '50%',
-                  height: '1px',
-                  background: '#9ca3af',
-                  opacity: 0.5
-                }} />
-
-                {/* Scatter plot points */}
-                <div style={{
-                  position: 'absolute',
-                  left: '50px',
-                  right: '20px',
-                  top: '20px',
-                  bottom: '50px',
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: '0.5rem',
-                  alignItems: 'flex-start',
-                  justifyContent: 'flex-start'
-                }}>
-                  {analysisResults.map((result, index) => {
-                    // Calculate position based on risk coefficient
-                    // Map coefficient from [-1, 1] to [0, 1] for positioning
-                    const normalizedCoeff = (result.riskAversionCoefficient + 1) / 2;
-                    const yPosition = (1 - normalizedCoeff) * 100; // Invert for proper Y-axis
-                    
-                    // Better spacing for X-axis - ensure minimum spacing between points
-                    const totalWidth = 100;
-                    const minSpacing = Math.max(5, totalWidth / Math.max(1, analysisResults.length - 1));
-                    const xPosition = analysisResults.length === 1 ? 50 : (index * minSpacing);
-                    
-                    return (
-                      <div
-                        key={result.userId}
-                        style={{
-                          position: 'absolute',
-                          left: `${xPosition}%`,
-                          top: `${yPosition}%`,
-                          transform: 'translate(-50%, -50%)',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          gap: '0.25rem',
-                          zIndex: 10
-                        }}
-                      >
-                        {/* User name label */}
-                        <div style={{
-                          background: 'rgba(0, 0, 0, 0.85)',
-                          color: 'white',
-                          padding: '0.25rem 0.5rem',
-                          borderRadius: '4px',
-                          fontSize: '0.7rem',
-                          fontWeight: '600',
-                          whiteSpace: 'nowrap',
-                          opacity: 1,
-                          pointerEvents: 'none',
-                          transform: 'translateY(-12px)',
-                          zIndex: 15,
-                          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
-                          border: '1px solid rgba(255, 255, 255, 0.2)'
-                        }}
-                        className="user-label"
-                        >
-                          {result.userName}
-                        </div>
-                        
-                        {/* Dot */}
-                        <div
-                          style={{
-                            width: '12px',
-                            height: '12px',
-                            background: getRiskColor(result.riskClassification),
-                            borderRadius: '50%',
-                            cursor: 'pointer',
-                            border: '2px solid white',
-                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-                            transition: 'all 0.2s ease'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'scale(1.3)';
-                            e.currentTarget.style.zIndex = '20';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'scale(1)';
-                            e.currentTarget.style.zIndex = '10';
-                          }}
-                          title={`${result.userName}: ${result.riskAversionCoefficient.toFixed(3)} (${result.riskClassification})`}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Risk category zones */}
-                <div style={{
-                  position: 'absolute',
-                  left: '40px',
-                  right: '0',
-                  top: '20px',
-                  bottom: '50px',
-                  pointerEvents: 'none'
-                }}>
-                  {/* Very Conservative zone */}
+                  {/* Mild Risk Aversion */}
                   <div style={{
-                    position: 'absolute',
-                    top: '0%',
-                    left: '0',
-                    right: '0',
-                    height: '20%',
-                    background: 'rgba(220, 38, 38, 0.05)',
-                    border: '1px dashed rgba(220, 38, 38, 0.3)',
-                    borderRadius: '4px'
-                  }} />
-                  
-                  {/* Conservative zone */}
-                  <div style={{
-                    position: 'absolute',
-                    top: '20%',
-                    left: '0',
-                    right: '0',
-                    height: '20%',
-                    background: 'rgba(245, 158, 11, 0.05)',
-                    border: '1px dashed rgba(245, 158, 11, 0.3)',
-                    borderRadius: '4px'
-                  }} />
-                  
-                  {/* Moderate zone */}
-                  <div style={{
-                    position: 'absolute',
-                    top: '40%',
-                    left: '0',
-                    right: '0',
-                    height: '20%',
-                    background: 'rgba(99, 102, 241, 0.05)',
-                    border: '1px dashed rgba(99, 102, 241, 0.3)',
-                    borderRadius: '4px'
-                  }} />
-                  
-                  {/* Aggressive zone */}
-                  <div style={{
-                    position: 'absolute',
-                    top: '60%',
-                    left: '0',
-                    right: '0',
-                    height: '20%',
-                    background: 'rgba(16, 185, 129, 0.05)',
-                    border: '1px dashed rgba(16, 185, 129, 0.3)',
-                    borderRadius: '4px'
-                  }} />
-                  
-                  {/* Very Aggressive zone */}
-                  <div style={{
-                    position: 'absolute',
-                    top: '80%',
-                    left: '0',
-                    right: '0',
-                    height: '20%',
-                    background: 'rgba(139, 92, 246, 0.05)',
-                    border: '1px dashed rgba(139, 92, 246, 0.3)',
-                    borderRadius: '4px'
-                  }} />
-                </div>
-              </div>
-
-              {/* Legend and axis labels */}
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginTop: '1rem',
-                fontSize: '0.875rem',
-                color: '#6b7280'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <div style={{
-                    width: '12px',
-                    height: '12px',
-                    background: '#9ca3af',
-                    borderRadius: '50%'
-                  }} />
-                  <span>Each dot represents a user (names always visible)</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <div style={{
-                    width: '12px',
-                    height: '12px',
-                    background: '#d1d5db',
-                    borderRadius: '2px'
-                  }} />
-                  <span>Risk zones (dashed borders)</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Classification Legend */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: '1rem',
-              marginBottom: '2rem'
-            }}>
-              {Object.entries(analysisSummary?.classificationDistribution || {}).map(([classification, count]) => (
-                <div
-                  key={classification}
-                  style={{
-                    background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-                    border: `2px solid ${getRiskColor(classification as RiskAnalysisResult['riskClassification'])}`,
-                    borderRadius: '12px',
-                    padding: '1rem',
-                    textAlign: 'center'
-                  }}
-                >
-                  <div style={{
-                    width: '20px',
-                    height: '20px',
-                    background: getRiskColor(classification as RiskAnalysisResult['riskClassification']),
-                    borderRadius: '50%',
-                    margin: '0 auto 0.5rem auto'
-                  }} />
-                  <div style={{
-                    fontSize: '1rem',
-                    fontWeight: '600',
-                    color: '#1f2937',
-                    marginBottom: '0.25rem'
+                    flex: 1,
+                    background: '#f59e0b',
+                    opacity: 0.2,
+                    borderRight: '1px solid #f59e0b',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '10px',
+                    fontWeight: '500',
+                    color: '#f59e0b',
+                    textAlign: 'center',
+                    lineHeight: '1.2'
                   }}>
-                    {classification}
+                    Mild Risk Aversion
                   </div>
+                  {/* Low Risk Aversion */}
                   <div style={{
-                    fontSize: '1.5rem',
-                    fontWeight: '700',
-                    color: getRiskColor(classification as RiskAnalysisResult['riskClassification'])
+                    flex: 1,
+                    background: '#3b82f6',
+                    opacity: 0.2,
+                    borderRight: '1px solid #3b82f6',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '10px',
+                    fontWeight: '500',
+                    color: '#3b82f6',
+                    textAlign: 'center',
+                    lineHeight: '1.2'
                   }}>
-                    {count}
+                    Low Risk Aversion
                   </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Detailed Results Table */}
-            {showDetails && (
-              <div style={{
-                background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
-                borderRadius: '12px',
-                padding: '1.5rem',
-                border: '1px solid #e2e8f0'
-              }}>
-                <h3 style={{
-                  fontSize: '1.125rem',
-                  fontWeight: '600',
-                  color: '#1f2937',
-                  marginBottom: '1rem'
-                }}>
-                  Detailed Analysis Results
-                </h3>
-                <div style={{
-                  overflowX: 'auto',
-                  background: 'white',
-                  borderRadius: '8px',
-                  border: '1px solid #e5e7eb'
-                }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr style={{ background: '#f9fafb' }}>
-                        <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: '600', color: '#374151' }}>User</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: '600', color: '#374151' }}>Risk Coefficient</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: '600', color: '#374151' }}>Classification</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: '600', color: '#374151' }}>R² Score</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'left', fontSize: '0.875rem', fontWeight: '600', color: '#374151' }}>Responses</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {analysisResults.map((result, index) => (
-                        <tr key={result.userId} style={{ borderTop: '1px solid #e5e7eb' }}>
-                          <td style={{ padding: '0.75rem', fontSize: '0.875rem' }}>
-                            <div>
-                              <div style={{ fontWeight: '500', color: '#1f2937' }}>{result.userName}</div>
-                              <div style={{ color: '#6b7280', fontSize: '0.75rem' }}>{result.userEmail}</div>
-                            </div>
-                          </td>
-                          <td style={{ padding: '0.75rem', fontSize: '0.875rem', fontWeight: '600', color: '#1f2937' }}>
-                            {result.riskAversionCoefficient.toFixed(3)}
-                          </td>
-                          <td style={{ padding: '0.75rem', fontSize: '0.875rem' }}>
-                            <span style={{
-                              background: `${getRiskColor(result.riskClassification)}20`,
-                              color: getRiskColor(result.riskClassification),
-                              padding: '0.25rem 0.5rem',
-                              borderRadius: '6px',
-                              fontSize: '0.75rem',
-                              fontWeight: '600'
-                            }}>
-                              {result.riskClassification}
-                            </span>
-                          </td>
-                          <td style={{ padding: '0.75rem', fontSize: '0.875rem', color: '#1f2937' }}>
-                            {(result.rSquared * 100).toFixed(1)}%
-                          </td>
-                          <td style={{ padding: '0.75rem', fontSize: '0.875rem', color: '#6b7280' }}>
-                            {result.responses.length}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  {/* Risk Neutral */}
+                  <div style={{
+                    flex: 1,
+                    background: '#10b981',
+                    opacity: 0.2,
+                    borderRight: '1px solid #10b981',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '10px',
+                    fontWeight: '500',
+                    color: '#10b981',
+                    textAlign: 'center',
+                    lineHeight: '1.2'
+                  }}>
+                    Risk Neutral
+                  </div>
+                  {/* Risk seeking */}
+                  <div style={{
+                    flex: 1,
+                    background: '#8b5cf6',
+                    opacity: 0.2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '10px',
+                    fontWeight: '500',
+                    color: '#8b5cf6',
+                    textAlign: 'center',
+                    lineHeight: '1.2'
+                  }}>
+                    Risk seeking
+                  </div>
                 </div>
               </div>
             )}
-          </motion.div>
-        )}
+          </div>
+          
+          {/* Axis Labels */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginTop: '1rem'
+          }}>
+            <div style={{
+              fontSize: '14px',
+              fontWeight: '600',
+              color: '#374151'
+            }}>
+              Risk Category
+            </div>
+          </div>
+        </motion.div>
 
-        {/* No Data State */}
-        {!isAnalyzing && analysisResults.length === 0 && responses && responses.length > 0 && (
+        {/* Risk Classification Distribution */}
+        {analysisSummary && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
             style={{
               background: 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'blur(10px)',
-              borderRadius: '20px',
-              padding: '3rem',
-              textAlign: 'center',
-              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
-              border: '1px solid rgba(255, 255, 255, 0.2)'
+              backdropFilter: 'blur(20px)',
+              borderRadius: '12px',
+              padding: '1rem',
+              marginBottom: '1.5rem',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+              border: '1px solid rgba(226, 232, 240, 0.8)'
             }}
           >
-            <BarChart3 size={64} color="#9ca3af" style={{ marginBottom: '1rem' }} />
             <h3 style={{
-              fontSize: '1.25rem',
-              fontWeight: '600',
-              color: '#374151',
-              marginBottom: '0.5rem'
-            }}>
-              Ready for Risk Analysis
-            </h3>
-            <p style={{
               fontSize: '1rem',
-              color: '#6b7280',
-              marginBottom: '1.5rem'
+              fontWeight: '600',
+              color: '#1f2937',
+              marginBottom: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
             }}>
-              Click "Analyze Risk" to perform z-score normalization and OLS regression analysis on user responses.
-            </p>
+              <BarChart3 size={18} />
+              Risk Classification Distribution
+            </h3>
+            
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+              gap: '0.75rem'
+            }}>
+              {Object.entries(analysisSummary.classificationDistribution).map(([category, count]) => (
+                <motion.div
+                  key={category}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  style={{
+                    background: `${getRiskColor(category as RiskAnalysisResult['riskClassification'])}15`,
+                    border: `2px solid ${getRiskColor(category as RiskAnalysisResult['riskClassification'])}`,
+                    borderRadius: '8px',
+                    padding: '1rem',
+                    textAlign: 'center',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                >
+                  <div style={{
+                    position: 'absolute',
+                    top: '0.375rem',
+                    right: '0.375rem',
+                    background: getRiskColor(category as RiskAnalysisResult['riskClassification']),
+                    color: 'white',
+                    fontSize: '0.625rem',
+                    fontWeight: '600',
+                    padding: '0.125rem 0.375rem',
+                    borderRadius: '8px'
+                  }}>
+                    {Math.round((count / analysisSummary.totalUsers) * 100)}%
+                  </div>
+                  
+                  <div style={{
+                    fontSize: '1.5rem',
+                    fontWeight: '700',
+                    color: getRiskColor(category as RiskAnalysisResult['riskClassification']),
+                    marginBottom: '0.375rem'
+                  }}>
+                    {count}
+                  </div>
+                  
+                  <div style={{
+                    fontSize: '0.75rem',
+                    fontWeight: '600',
+                    color: '#1f2937',
+                    marginBottom: '0.125rem',
+                    lineHeight: '1.2'
+                  }}>
+                    {getRiskDisplayName(category as RiskAnalysisResult['riskClassification'])}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </motion.div>
         )}
 
-        {/* No Responses State */}
-        {responses && responses.length === 0 && (
+        {/* Detailed Results Table */}
+        {showDetails && analysisResults.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
             style={{
               background: 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'blur(10px)',
-              borderRadius: '20px',
-              padding: '3rem',
-              textAlign: 'center',
-              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
-              border: '1px solid rgba(255, 255, 255, 0.2)'
+              backdropFilter: 'blur(20px)',
+              borderRadius: '12px',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+              border: '1px solid rgba(226, 232, 240, 0.8)',
+              overflow: 'hidden'
             }}
           >
-            <AlertCircle size={64} color="#9ca3af" style={{ marginBottom: '1rem' }} />
-            <h3 style={{
-              fontSize: '1.25rem',
-              fontWeight: '600',
-              color: '#374151',
-              marginBottom: '0.5rem'
+            <div style={{
+              padding: '1rem',
+              borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
+              background: 'rgba(248, 250, 252, 0.5)'
             }}>
-              No Responses Available
-            </h3>
-            <p style={{
-              fontSize: '1rem',
-              color: '#6b7280',
-              marginBottom: '1.5rem'
-            }}>
-              There are no user responses available for risk analysis. Users need to complete surveys first.
-            </p>
+              <h3 style={{
+                fontSize: '1rem',
+                fontWeight: '600',
+                color: '#1f2937',
+                margin: 0
+              }}>
+                Individual User Analysis ({analysisResults.length})
+              </h3>
+            </div>
+
+            <div style={{ overflow: 'auto', maxHeight: '400px' }}>
+              <table style={{
+                width: '100%',
+                borderCollapse: 'collapse'
+              }}>
+                <thead>
+                  <tr style={{
+                    background: 'rgba(248, 250, 252, 0.5)',
+                    borderBottom: '1px solid rgba(226, 232, 240, 0.8)'
+                  }}>
+                    <th style={{
+                      padding: '0.75rem 0.5rem',
+                      textAlign: 'left',
+                      fontSize: '0.75rem',
+                      fontWeight: '600',
+                      color: '#374151'
+                    }}>
+                      User
+                    </th>
+                    <th style={{
+                      padding: '0.75rem 0.5rem',
+                      textAlign: 'left',
+                      fontSize: '0.75rem',
+                      fontWeight: '600',
+                      color: '#374151'
+                    }}>
+                      Classification
+                    </th>
+                    <th style={{
+                      padding: '0.75rem 0.5rem',
+                      textAlign: 'left',
+                      fontSize: '0.75rem',
+                      fontWeight: '600',
+                      color: '#374151'
+                    }}>
+                      Risk Coeff.
+                    </th>
+                    <th style={{
+                      padding: '0.75rem 0.5rem',
+                      textAlign: 'left',
+                      fontSize: '0.75rem',
+                      fontWeight: '600',
+                      color: '#374151'
+                    }}>
+                      Alpha
+                    </th>
+                    <th style={{
+                      padding: '0.75rem 0.5rem',
+                      textAlign: 'left',
+                      fontSize: '0.75rem',
+                      fontWeight: '600',
+                      color: '#374151'
+                    }}>
+                      Beta1
+                    </th>
+                    <th style={{
+                      padding: '0.75rem 0.5rem',
+                      textAlign: 'left',
+                      fontSize: '0.75rem',
+                      fontWeight: '600',
+                      color: '#374151'
+                    }}>
+                      Beta2
+                    </th>
+                    <th style={{
+                      padding: '0.75rem 0.5rem',
+                      textAlign: 'left',
+                      fontSize: '0.75rem',
+                      fontWeight: '600',
+                      color: '#374151'
+                    }}>
+                      R²
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {analysisResults.map((result, index) => (
+                    <motion.tr
+                      key={result.userId}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      style={{
+                        borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(248, 250, 252, 0.5)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent';
+                      }}
+                    >
+                      <td style={{ padding: '0.75rem 0.5rem' }}>
+                        <div>
+                          <h4 style={{
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            color: '#1f2937',
+                            margin: '0 0 0.125rem 0'
+                          }}>
+                            {result.userName}
+                          </h4>
+                          <p style={{
+                            fontSize: '0.625rem',
+                            color: '#6b7280',
+                            margin: 0
+                          }}>
+                            {result.userEmail}
+                          </p>
+                        </div>
+                      </td>
+                      <td style={{ padding: '0.75rem 0.5rem' }}>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.375rem'
+                        }}>
+                          <div style={{
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            background: getRiskColor(result.riskClassification)
+                          }} />
+                          <span style={{
+                            fontSize: '0.75rem',
+                            fontWeight: '500',
+                            color: getRiskColor(result.riskClassification)
+                          }}>
+                            {getRiskDisplayName(result.riskClassification)}
+                          </span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '0.75rem 0.5rem' }}>
+                        <span style={{
+                          fontSize: '0.75rem',
+                          fontWeight: '500',
+                          color: '#374151'
+                        }}>
+                          {result.riskAversionCoefficient.toFixed(3)}
+                        </span>
+                      </td>
+                      <td style={{ padding: '0.75rem 0.5rem' }}>
+                        <span style={{
+                          fontSize: '0.75rem',
+                          fontWeight: '500',
+                          color: '#374151'
+                        }}>
+                          {result.alpha.toFixed(3)}
+                        </span>
+                      </td>
+                      <td style={{ padding: '0.75rem 0.5rem' }}>
+                        <span style={{
+                          fontSize: '0.75rem',
+                          fontWeight: '500',
+                          color: '#374151'
+                        }}>
+                          {result.beta1.toFixed(3)}
+                        </span>
+                      </td>
+                      <td style={{ padding: '0.75rem 0.5rem' }}>
+                        <span style={{
+                          fontSize: '0.75rem',
+                          fontWeight: '500',
+                          color: '#374151'
+                        }}>
+                          {result.beta2.toFixed(3)}
+                        </span>
+                      </td>
+                      <td style={{ padding: '0.75rem 0.5rem' }}>
+                        <span style={{
+                          fontSize: '0.75rem',
+                          fontWeight: '500',
+                          color: '#374151'
+                        }}>
+                          {result.rSquared.toFixed(3)}
+                        </span>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </motion.div>
         )}
       </div>

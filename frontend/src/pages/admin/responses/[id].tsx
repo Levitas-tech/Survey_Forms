@@ -42,6 +42,7 @@ interface Answer {
         capital: number;
         mean: number;
         stdDev: number;
+        maxDrawdown?: number;
       };
     };
   };
@@ -72,6 +73,7 @@ export default function ResponseViewPage() {
   const { id } = router.query;
   const { user, loading: authLoading } = useAuth();
   const [isExporting, setIsExporting] = useState(false);
+
 
   // Redirect if not authenticated or not admin
   useEffect(() => {
@@ -625,6 +627,20 @@ export default function ResponseViewPage() {
                         </div>
                         <div style={{ fontSize: '0.875rem', fontWeight: '700', color: '#1f293b' }}>
                           {answer.question.config.traderPerformance.stdDev}%
+                        </div>
+                      </div>
+                      <div style={{
+                        background: 'white',
+                        padding: '0.75rem',
+                        borderRadius: '8px',
+                        textAlign: 'center',
+                        border: '1px solid #e5e7eb'
+                      }}>
+                        <div style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: '600' }}>
+                          Max Drawdown
+                        </div>
+                        <div style={{ fontSize: '0.875rem', fontWeight: '700', color: '#1f293b' }}>
+                          {answer.question.config.traderPerformance.maxDrawdown || '0.00'}%
                         </div>
                       </div>
                     </div>

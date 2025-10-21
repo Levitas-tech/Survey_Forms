@@ -26,6 +26,7 @@ interface TraderQuestion {
   capital: number;
   mean: number;
   stdDev: number;
+  maxDrawdown?: number;
   description: string;
   order: number;
 }
@@ -47,6 +48,7 @@ const TraderPerformanceSurveyPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
 
   // Fetch form data
   const { data: form, isLoading: formLoading, error: formError } = useQuery({
@@ -756,6 +758,28 @@ const TraderPerformanceSurveyPage: React.FC = () => {
                                 color: '#1f2937'
                               }}>
                                 ₹{trader.capital} Cr
+                              </div>
+                            </div>
+                            <div style={{
+                              background: '#fef2f2',
+                              padding: '1rem',
+                              borderRadius: '8px',
+                              textAlign: 'center'
+                            }}>
+                              <div style={{
+                                fontSize: '0.75rem',
+                                fontWeight: '500',
+                                color: '#dc2626',
+                                marginBottom: '0.25rem'
+                              }}>
+                                Max Drawdown
+                              </div>
+                              <div style={{
+                                fontSize: '1.25rem',
+                                fontWeight: '700',
+                                color: '#1f2937'
+                              }}>
+                                {trader.maxDrawdown || '0.00'}%
                               </div>
                             </div>
                           </div>
