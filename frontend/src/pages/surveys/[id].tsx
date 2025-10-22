@@ -69,6 +69,49 @@ const SurveyPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const questionsPerPage = 1;
 
+  // Add responsive styles
+  React.useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @media (max-width: 768px) {
+        .survey-container {
+          padding: 0.5rem !important;
+        }
+        .survey-card {
+          margin: 0.5rem !important;
+          border-radius: 12px !important;
+        }
+        .monthly-returns-grid {
+          grid-template-columns: repeat(3, 1fr) !important;
+          gap: 0.25rem !important;
+        }
+        .monthly-returns-item {
+          padding: 0.25rem 0.125rem !important;
+          font-size: 0.6rem !important;
+        }
+        .trader-stats-grid {
+          grid-template-columns: repeat(2, 1fr) !important;
+          gap: 0.5rem !important;
+        }
+        .trader-stats-item {
+          padding: 0.5rem !important;
+          font-size: 0.75rem !important;
+        }
+        .question-title {
+          font-size: 1rem !important;
+          line-height: 1.3 !important;
+        }
+        .rating-input {
+          width: 100% !important;
+          padding: 0.75rem !important;
+          font-size: 1rem !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
+
 
   // Fetch form data
   const { data: form, isLoading: formLoading, error: formError } = useQuery({
@@ -792,12 +835,13 @@ const SurveyPage: React.FC = () => {
         </div>
       </header>
 
-      <div style={{
+      <div className="survey-container" style={{
         maxWidth: '1400px',
         margin: '0 auto',
         padding: '1rem'
       }}>
         <motion.div
+          className="survey-card"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           style={{
@@ -922,7 +966,7 @@ const SurveyPage: React.FC = () => {
                             }}>
                               <span style={{ color: 'white', fontSize: '0.8rem' }}>📊</span>
                             </div>
-                            <h4 style={{
+                            <h4 className="question-title" style={{
                               fontSize: '0.9rem',
                               fontWeight: '700',
                               color: '#1e293b',
@@ -931,7 +975,7 @@ const SurveyPage: React.FC = () => {
                               Monthly Returns (12 months)
                             </h4>
                           </div>
-                          <div style={{ 
+                          <div className="monthly-returns-grid" style={{ 
                             display: 'grid', 
                             gridTemplateColumns: 'repeat(6, 1fr)', 
                             gap: '0.3rem', 
@@ -939,7 +983,7 @@ const SurveyPage: React.FC = () => {
                             marginBottom: '0.75rem'
                           }}>
                             {currentQuestion.config.traderPerformance.monthlyReturns.map((returnValue: number, monthIndex: number) => (
-                              <div key={monthIndex} style={{
+                              <div key={monthIndex} className="monthly-returns-item" style={{
                                 textAlign: 'center',
                                 padding: '0.4rem 0.2rem',
                                 background: 'white',
@@ -967,20 +1011,20 @@ const SurveyPage: React.FC = () => {
                                   fontWeight: '600',
                                   color: '#6b7280'
                                 }}>
-                                  ₹{((returnValue / 100) * (currentQuestion.config.traderPerformance.capital || 0)).toFixed(1)} Cr
+                                  ₹{(returnValue * 5).toFixed(1)} L
                                 </div>
                               </div>
                             ))}
                           </div>
                           
                           {/* Trader Stats */}
-                          <div style={{
+                          <div className="trader-stats-grid" style={{
                             display: 'grid',
                             gridTemplateColumns: 'repeat(2, 1fr)',
                             gap: '0.5rem',
                             marginBottom: '0.5rem'
                           }}>
-                            <div style={{
+                            <div className="trader-stats-item" style={{
                               background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
                               border: '1px solid #bae6fd',
                               borderRadius: '6px',
@@ -1087,6 +1131,7 @@ const SurveyPage: React.FC = () => {
                             Rate this trader's performance (1-10):
                           </label>
                           <input
+                            className="rating-input"
                             type="number"
                             min="1"
                             max="10"

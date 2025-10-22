@@ -1489,7 +1489,7 @@ const QuestionEditor: React.FC<{
                         fontWeight: '600',
                         color: '#6b7280'
                       }}>
-                        ₹{((returnValue / 100) * (question.config?.traderPerformance?.capital || 0)).toFixed(2)} Cr
+                        ₹{(returnValue * 5).toFixed(1)} L
                       </div>
                     </div>
                   ))}

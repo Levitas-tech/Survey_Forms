@@ -116,17 +116,12 @@ export const sampleTraderData: TraderPerformance[] = [
 // Helper function to calculate actual money returns
 export const calculateMoneyReturns = (percentageReturns: number[], capital: number): number[] => {
   return percentageReturns.map(returnPercent => {
-    return (returnPercent / 100) * capital * 10000000; // Convert crores to actual amount
+    return returnPercent * 5; // Fixed 5 crores capital, return in lakhs
   });
 };
 
 // Helper function to format money
 export const formatMoney = (amount: number): string => {
-  if (amount >= 10000000) {
-    return `₹${(amount / 10000000).toFixed(2)} Cr`;
-  } else if (amount >= 100000) {
-    return `₹${(amount / 100000).toFixed(2)} L`;
-  } else {
-    return `₹${amount.toLocaleString()}`;
-  }
+  // Amount is already in lakhs from calculateMoneyReturns
+  return `₹${amount.toFixed(1)} L`;
 };

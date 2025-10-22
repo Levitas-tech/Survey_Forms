@@ -678,7 +678,7 @@ export default function ResponseViewPage() {
                               {returnValue > 0 ? '+' : ''}{returnValue.toFixed(2)}%
                             </div>
                             <div style={{ fontSize: '0.65rem', color: '#6b7280' }}>
-                              ₹{((returnValue / 100) * answer.question.config.traderPerformance.capital).toFixed(2)} Cr
+                              ₹{(returnValue * 5).toFixed(1)} L
                             </div>
                           </div>
                         ))}
