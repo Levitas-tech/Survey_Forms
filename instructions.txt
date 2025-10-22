@@ -1,5 +1,7 @@
 #In case of deployment
 
+ssh -i Survey.pem ubuntu@13.204.138.222
+
 cd /var/www/surveyflow/backend
 git pull
 npm install
