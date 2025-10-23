@@ -96,18 +96,36 @@ export default function RiskAnalysisPage() {
   const calculateTopAlphaUsers = (results: RiskAnalysisResult[]) => {
     if (results.length === 0) return;
     
-    // Sort by alpha values in descending order
-    const sortedByAlpha = [...results].sort((a, b) => b.alpha - a.alpha);
+    // Extract all alpha values
+    const alphaValues = results.map(user => user.alpha);
     
-    // Calculate 90th percentile
-    const percentile90Index = Math.ceil(results.length * 0.9) - 1;
-    const percentile90Value = sortedByAlpha[percentile90Index]?.alpha || 0;
+    // Sort alpha values in ascending order for percentile calculation
+    const sortedAlphaValues = [...alphaValues].sort((a, b) => a - b);
     
-    // Get users >= 90th percentile
-    const topUsers = sortedByAlpha.filter(user => user.alpha >= percentile90Value);
+    // Calculate 90th percentile using the standard method
+    // 90th percentile means 90% of values are below this threshold
+    const percentile90Index = Math.ceil(sortedAlphaValues.length * 0.9) - 1;
+    const percentile90Value = sortedAlphaValues[percentile90Index] || 0;
+    
+    // Get users >= 90th percentile (top 10% of users)
+    const topUsers = results.filter(user => user.alpha >= percentile90Value);
+    
+    // Sort top users by alpha in descending order for display
+    const sortedTopUsers = topUsers.sort((a, b) => b.alpha - a.alpha);
+    
+    // Debug logging
+    console.log('=== 90th Percentile Alpha Calculation ===');
+    console.log('All alpha values:', alphaValues);
+    console.log('Sorted alpha values (ascending):', sortedAlphaValues);
+    console.log('Total users:', results.length);
+    console.log('90th percentile index:', percentile90Index);
+    console.log('90th percentile value:', percentile90Value);
+    console.log('Users >= 90th percentile:', topUsers.length);
+    console.log('Top users:', sortedTopUsers.map(u => ({ name: u.userName, alpha: u.alpha })));
+    console.log('==========================================');
     
     setAlpha90thPercentile(percentile90Value);
-    setTopAlphaUsers(topUsers);
+    setTopAlphaUsers(sortedTopUsers);
   };
 
   const handleAnalyzeRisk = async () => {
