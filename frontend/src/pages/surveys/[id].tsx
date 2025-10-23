@@ -766,74 +766,39 @@ const SurveyPage: React.FC = () => {
           </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            {/* Only show action buttons on last page */}
+            {/* Only show Save Draft button on last page */}
             {isLastPage && (
-              <>
-                <button
-                  onClick={handleSave}
-                  disabled={createResponseMutation.isPending}
-                  style={{
-                    background: 'white',
-                    color: '#667eea',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '12px',
-                    padding: '0.75rem 1.5rem',
-                    cursor: createResponseMutation.isPending ? 'not-allowed' : 'pointer',
-                    fontWeight: '500',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    transition: 'all 0.2s ease',
-                    opacity: createResponseMutation.isPending ? 0.7 : 1
-                  }}
-                >
-                  {createResponseMutation.isPending && (
-                    <div style={{
-                      width: '16px',
-                      height: '16px',
-                      border: '2px solid transparent',
-                      borderTop: '2px solid #667eea',
-                      borderRadius: '50%',
-                      animation: 'spin 1s linear infinite'
-                    }} />
-                  )}
-                  <Save size={20} />
-                  {createResponseMutation.isPending ? 'Saving...' : 'Save Draft'}
-                </button>
-                <button
-                  onClick={handleSubmit}
-                  disabled={isSubmitting || submitResponseMutation.isPending}
-                  style={{
-                    background: isSubmitting || submitResponseMutation.isPending
-                      ? '#9ca3af' 
-                      : 'linear-gradient(135deg, #667eea, #764ba2)',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '12px',
-                    padding: '0.75rem 1.5rem',
-                    cursor: isSubmitting || submitResponseMutation.isPending ? 'not-allowed' : 'pointer',
-                    fontWeight: '500',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    transition: 'all 0.2s ease',
-                    opacity: isSubmitting || submitResponseMutation.isPending ? 0.7 : 1
-                  }}
-                >
-                  {(isSubmitting || submitResponseMutation.isPending) && (
-                    <div style={{
-                      width: '16px',
-                      height: '16px',
-                      border: '2px solid transparent',
-                      borderTop: '2px solid white',
-                      borderRadius: '50%',
-                      animation: 'spin 1s linear infinite'
-                    }} />
-                  )}
-                  <Send size={20} />
-                  {isSubmitting || submitResponseMutation.isPending ? 'Submitting...' : 'Submit Survey'}
-                </button>
-              </>
+              <button
+                onClick={handleSave}
+                disabled={createResponseMutation.isPending}
+                style={{
+                  background: 'white',
+                  color: '#667eea',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '12px',
+                  padding: '0.75rem 1.5rem',
+                  cursor: createResponseMutation.isPending ? 'not-allowed' : 'pointer',
+                  fontWeight: '500',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  transition: 'all 0.2s ease',
+                  opacity: createResponseMutation.isPending ? 0.7 : 1
+                }}
+              >
+                {createResponseMutation.isPending && (
+                  <div style={{
+                    width: '16px',
+                    height: '16px',
+                    border: '2px solid transparent',
+                    borderTop: '2px solid #667eea',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }} />
+                )}
+                <Save size={20} />
+                {createResponseMutation.isPending ? 'Saving...' : 'Save Draft'}
+              </button>
             )}
           </div>
         </div>
@@ -1243,25 +1208,44 @@ const SurveyPage: React.FC = () => {
                     </button>
 
                     <button
-                      onClick={goToNextPage}
-                      disabled={isLastPage}
+                      onClick={isLastPage ? handleSubmit : goToNextPage}
+                      disabled={isLastPage ? (isSubmitting || submitResponseMutation.isPending) : false}
                       style={{
-                        background: isLastPage ? '#f3f4f6' : 'linear-gradient(135deg, #667eea, #764ba2)',
-                        color: isLastPage ? '#9ca3af' : 'white',
+                        background: isLastPage 
+                          ? (isSubmitting || submitResponseMutation.isPending)
+                            ? '#9ca3af'
+                            : 'linear-gradient(135deg, #667eea, #764ba2)'
+                          : 'linear-gradient(135deg, #667eea, #764ba2)',
+                        color: 'white',
                         border: 'none',
                         borderRadius: '8px',
                         padding: '0.6rem 1rem',
-                        cursor: isLastPage ? 'not-allowed' : 'pointer',
+                        cursor: (isLastPage && (isSubmitting || submitResponseMutation.isPending)) ? 'not-allowed' : 'pointer',
                         fontSize: '0.8rem',
                         fontWeight: '500',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.25rem',
                         transition: 'all 0.2s ease',
-                        flex: 1
+                        flex: 1,
+                        opacity: (isLastPage && (isSubmitting || submitResponseMutation.isPending)) ? 0.7 : 1
                       }}
                     >
-                      Next →
+                      {(isLastPage && (isSubmitting || submitResponseMutation.isPending)) && (
+                        <div style={{
+                          width: '12px',
+                          height: '12px',
+                          border: '2px solid transparent',
+                          borderTop: '2px solid white',
+                          borderRadius: '50%',
+                          animation: 'spin 1s linear infinite'
+                        }} />
+                      )}
+                      {isLastPage ? (
+                        isSubmitting || submitResponseMutation.isPending ? 'Submitting...' : 'Submit Survey'
+                      ) : (
+                        'Next →'
+                      )}
                     </button>
                   </div>
                 </div>

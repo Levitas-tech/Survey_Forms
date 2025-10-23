@@ -58,6 +58,8 @@ export default function RiskAnalysisPage() {
   const [analysisSummary, setAnalysisSummary] = useState<AnalysisSummary | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [topAlphaUsers, setTopAlphaUsers] = useState<RiskAnalysisResult[]>([]);
+  const [alpha90thPercentile, setAlpha90thPercentile] = useState<number>(0);
 
   // Redirect if not authenticated or not admin
   useEffect(() => {
@@ -90,6 +92,24 @@ export default function RiskAnalysisPage() {
     },
   });
 
+  // Calculate 90th percentile and top alpha users
+  const calculateTopAlphaUsers = (results: RiskAnalysisResult[]) => {
+    if (results.length === 0) return;
+    
+    // Sort by alpha values in descending order
+    const sortedByAlpha = [...results].sort((a, b) => b.alpha - a.alpha);
+    
+    // Calculate 90th percentile
+    const percentile90Index = Math.ceil(results.length * 0.9) - 1;
+    const percentile90Value = sortedByAlpha[percentile90Index]?.alpha || 0;
+    
+    // Get users >= 90th percentile
+    const topUsers = sortedByAlpha.filter(user => user.alpha >= percentile90Value);
+    
+    setAlpha90thPercentile(percentile90Value);
+    setTopAlphaUsers(topUsers);
+  };
+
   const handleAnalyzeRisk = async () => {
     if (!responses || responses.length === 0) {
       toast.error('No responses available for analysis');
@@ -98,7 +118,9 @@ export default function RiskAnalysisPage() {
 
     setIsAnalyzing(true);
     try {
-      await analyzeRiskMutation.mutateAsync();
+      const data = await analyzeRiskMutation.mutateAsync();
+      // Calculate top alpha users after analysis
+      calculateTopAlphaUsers(data.results);
     } finally {
       setIsAnalyzing(false);
     }
@@ -847,6 +869,205 @@ export default function RiskAnalysisPage() {
                     lineHeight: '1.2'
                   }}>
                     {getRiskDisplayName(category as RiskAnalysisResult['riskClassification'])}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Top Alpha Users Section */}
+        {topAlphaUsers.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            style={{
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(20px)',
+              borderRadius: '16px',
+              padding: '2rem',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+              border: '1px solid rgba(226, 232, 240, 0.8)',
+              marginBottom: '2rem'
+            }}
+          >
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '1.5rem'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem'
+              }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Target size={20} color="white" />
+                </div>
+                <div>
+                  <h3 style={{
+                    fontSize: '1.25rem',
+                    fontWeight: '700',
+                    color: '#1f2937',
+                    margin: 0
+                  }}>
+                    Top Alpha Users (≥90th Percentile)
+                  </h3>
+                  <p style={{
+                    fontSize: '0.875rem',
+                    color: '#6b7280',
+                    margin: '0.25rem 0 0 0'
+                  }}>
+                    90th percentile threshold: {alpha90thPercentile.toFixed(3)}
+                  </p>
+                </div>
+              </div>
+              <div style={{
+                background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                border: '1px solid #f59e0b',
+                borderRadius: '8px',
+                padding: '0.5rem 1rem',
+                fontSize: '0.875rem',
+                fontWeight: '600',
+                color: '#92400e'
+              }}>
+                {topAlphaUsers.length} user{topAlphaUsers.length !== 1 ? 's' : ''}
+              </div>
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+              gap: '1rem'
+            }}>
+              {topAlphaUsers.map((user, index) => (
+                <motion.div
+                  key={user.userId}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  style={{
+                    background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                    border: '1px solid #f59e0b',
+                    borderRadius: '12px',
+                    padding: '1.5rem',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                >
+                  <div style={{
+                    position: 'absolute',
+                    top: '0.75rem',
+                    right: '0.75rem',
+                    background: '#f59e0b',
+                    color: 'white',
+                    fontSize: '0.75rem',
+                    fontWeight: '600',
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: '12px'
+                  }}>
+                    #{index + 1}
+                  </div>
+                  
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    marginBottom: '1rem'
+                  }}>
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.25rem',
+                      fontWeight: '700',
+                      color: 'white'
+                    }}>
+                      {user.userName.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <h4 style={{
+                        fontSize: '1rem',
+                        fontWeight: '600',
+                        color: '#92400e',
+                        margin: '0 0 0.25rem 0'
+                      }}>
+                        {user.userName}
+                      </h4>
+                      <p style={{
+                        fontSize: '0.75rem',
+                        color: '#a16207',
+                        margin: 0
+                      }}>
+                        {user.userEmail}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(2, 1fr)',
+                    gap: '0.75rem'
+                  }}>
+                    <div style={{
+                      background: 'rgba(255, 255, 255, 0.7)',
+                      borderRadius: '8px',
+                      padding: '0.75rem',
+                      textAlign: 'center'
+                    }}>
+                      <div style={{
+                        fontSize: '0.75rem',
+                        fontWeight: '600',
+                        color: '#92400e',
+                        marginBottom: '0.25rem'
+                      }}>
+                        Alpha (α)
+                      </div>
+                      <div style={{
+                        fontSize: '1.25rem',
+                        fontWeight: '700',
+                        color: '#1f2937'
+                      }}>
+                        {user.alpha.toFixed(3)}
+                      </div>
+                    </div>
+                    <div style={{
+                      background: 'rgba(255, 255, 255, 0.7)',
+                      borderRadius: '8px',
+                      padding: '0.75rem',
+                      textAlign: 'center'
+                    }}>
+                      <div style={{
+                        fontSize: '0.75rem',
+                        fontWeight: '600',
+                        color: '#92400e',
+                        marginBottom: '0.25rem'
+                      }}>
+                        Risk Classification
+                      </div>
+                      <div style={{
+                        fontSize: '0.875rem',
+                        fontWeight: '600',
+                        color: getRiskColor(user.riskClassification),
+                        textTransform: 'capitalize'
+                      }}>
+                        {user.riskClassification}
+                      </div>
+                    </div>
                   </div>
                 </motion.div>
               ))}
