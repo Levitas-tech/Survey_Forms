@@ -860,7 +860,7 @@ const QuestionEditor: React.FC<{
                   textAlign: 'center'
                 }}>
                   <div style={{ fontSize: '0.7rem', color: '#d97706', fontWeight: '600', marginBottom: '0.25rem' }}>
-                    Mean Return
+                    Annual Return
                   </div>
                   <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#92400e' }}>
                     {editData.config.traderPerformance.mean >= 0 ? '+' : ''}{editData.config.traderPerformance.mean}%
@@ -1083,7 +1083,7 @@ const QuestionEditor: React.FC<{
                     color: '#374151',
                     marginBottom: '0.5rem'
                   }}>
-                    Mean Return (%)
+                    Annual Return (%)
                   </label>
                   <input
                     type="number"
@@ -1380,7 +1380,7 @@ const QuestionEditor: React.FC<{
                   textAlign: 'center'
                 }}>
                   <div style={{ fontSize: '0.7rem', color: '#d97706', fontWeight: '600', marginBottom: '0.25rem' }}>
-                    Mean Return
+                    Annual Return
                   </div>
                   <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#92400e' }}>
                     {question.config.traderPerformance.mean >= 0 ? '+' : ''}{question.config.traderPerformance.mean}%

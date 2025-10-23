@@ -1032,7 +1032,7 @@ const SurveyPage: React.FC = () => {
                               boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
                             }}>
                               <div style={{ fontSize: '0.6rem', color: '#d97706', fontWeight: '600', marginBottom: '0.1rem' }}>
-                                Mean Return
+                                Annual Return
                               </div>
                               <div style={{ fontSize: '0.75rem', fontWeight: '700', color: '#92400e' }}>
                                 {currentQuestion.config.traderPerformance.mean >= 0 ? '+' : ''}{currentQuestion.config.traderPerformance.mean}%

@@ -690,7 +690,7 @@ const TraderPerformanceSurveyPage: React.FC = () => {
                             color: '#0369a1',
                             marginBottom: '0.25rem'
                           }}>
-                            Mean Return
+                            Annual Return
                           </div>
                           <div style={{
                             fontSize: '1.25rem',

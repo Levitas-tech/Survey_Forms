@@ -1093,7 +1093,7 @@ const RiskAversionAnalyticsPage: React.FC = () => {
                                 fontWeight: '600',
                                 color: '#374151'
                               }}>
-                                Mean Return
+                                Annual Return
                               </th>
                               <th style={{
                                 padding: '0.75rem',
