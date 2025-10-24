@@ -49,6 +49,65 @@ const TraderPerformanceSurveyPage: React.FC = () => {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Add responsive styles
+  React.useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @media (max-width: 768px) {
+        .survey-header {
+          flex-direction: column !important;
+          align-items: flex-start !important;
+          gap: 0.75rem !important;
+          padding: 1rem !important;
+          height: auto !important;
+          min-height: auto !important;
+        }
+        .survey-header-content {
+          width: 100% !important;
+          flex-direction: column !important;
+          align-items: flex-start !important;
+          gap: 0.5rem !important;
+        }
+        .survey-header-actions {
+          width: 100% !important;
+          justify-content: space-between !important;
+        }
+        .survey-header-title {
+          font-size: 1rem !important;
+          line-height: 1.3 !important;
+          max-width: 100% !important;
+          overflow-wrap: break-word !important;
+          word-break: break-word !important;
+        }
+        .survey-header-description {
+          font-size: 0.75rem !important;
+          line-height: 1.3 !important;
+          max-width: 100% !important;
+          overflow-wrap: break-word !important;
+          word-break: break-word !important;
+        }
+      }
+      @media (max-width: 480px) {
+        .survey-header {
+          padding: 0.75rem !important;
+        }
+        .survey-header-title {
+          font-size: 0.9rem !important;
+        }
+        .survey-header-description {
+          font-size: 0.7rem !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      if (document.head.contains(style)) {
+        document.head.removeChild(style);
+      }
+    };
+  }, []);
+
 
   // Fetch form data
   const { data: form, isLoading: formLoading, error: formError } = useQuery({
@@ -341,7 +400,7 @@ const TraderPerformanceSurveyPage: React.FC = () => {
         top: 0,
         zIndex: 50
       }}>
-        <div style={{
+        <div className="survey-header" style={{
           maxWidth: '1200px',
           margin: '0 auto',
           padding: '0 1.5rem',
@@ -350,7 +409,7 @@ const TraderPerformanceSurveyPage: React.FC = () => {
           alignItems: 'center',
           height: '4rem'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div className="survey-header-content" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <button
               onClick={() => router.back()}
               style={{
@@ -376,26 +435,30 @@ const TraderPerformanceSurveyPage: React.FC = () => {
             }}>
               <BarChart size={24} color="white" />
             </div>
-            <div>
-              <h1 style={{
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h1 className="survey-header-title" style={{
                 fontSize: '1.25rem',
                 fontWeight: '700',
                 color: '#1f2937',
-                margin: 0
+                margin: 0,
+                wordWrap: 'break-word',
+                overflowWrap: 'break-word'
               }}>
                 {form.title}
               </h1>
-              <p style={{
+              <p className="survey-header-description" style={{
                 fontSize: '0.875rem',
                 color: '#6b7280',
-                margin: 0
+                margin: 0,
+                wordWrap: 'break-word',
+                overflowWrap: 'break-word'
               }}>
                 Trader Performance Evaluation
               </p>
             </div>
           </div>
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div className="survey-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <button
               onClick={handleSave}
               disabled={createResponseMutation.isPending}
