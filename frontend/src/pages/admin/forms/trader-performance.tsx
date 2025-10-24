@@ -29,7 +29,7 @@ const TraderPerformanceSurveyPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: 'Trader Performance Evaluation Survey',
-    description: 'Rate the performance of 10 different traders based on their 12-month returns, mean, and standard deviation. Each trader has a capital of ₹5 crores.',
+    description: 'Rate the performance of 10 different traders based on their 12-month returns, mean, and standard deviation. Each trader has a capital of Rs 5 crores.',
     questions: sampleTraderData.map((trader, index) => ({
       id: trader.id,
       traderName: trader.name,

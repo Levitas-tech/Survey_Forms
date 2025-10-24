@@ -29,6 +29,44 @@ interface Form {
 const SurveysPage: React.FC = () => {
   const router = useRouter();
   const { user } = useAuth();
+
+  // Add responsive styles for mobile header
+  React.useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @media (max-width: 768px) {
+        .surveys-header {
+          flex-direction: column !important;
+          align-items: flex-start !important;
+          gap: 0.75rem !important;
+          padding: 1rem !important;
+          height: auto !important;
+        }
+        .surveys-header-content {
+          width: 100% !important;
+        }
+        .surveys-header-title {
+          font-size: 1.25rem !important;
+          line-height: 1.3 !important;
+          word-wrap: break-word !important;
+          overflow-wrap: break-word !important;
+        }
+        .surveys-header-description {
+          font-size: 0.8rem !important;
+          line-height: 1.3 !important;
+          word-wrap: break-word !important;
+          overflow-wrap: break-word !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      if (document.head.contains(style)) {
+        document.head.removeChild(style);
+      }
+    };
+  }, []);
   const [searchTerm, setSearchTerm] = useState('');
 
   const { data: forms, isLoading } = useQuery({
@@ -124,7 +162,7 @@ const SurveysPage: React.FC = () => {
         top: 0,
         zIndex: 50
       }}>
-        <div style={{
+        <div className="surveys-header" style={{
           maxWidth: '1200px',
           margin: '0 auto',
           padding: '0 1.5rem',
@@ -133,7 +171,7 @@ const SurveysPage: React.FC = () => {
           alignItems: 'center',
           height: '4rem'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div className="surveys-header-content" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <button
               onClick={() => router.back()}
               style={{
@@ -160,18 +198,22 @@ const SurveysPage: React.FC = () => {
               <FileText size={24} color="white" />
             </div>
             <div>
-              <h1 style={{
+              <h1 className="surveys-header-title" style={{
                 fontSize: '1.5rem',
                 fontWeight: '700',
                 color: '#1f2937',
-                margin: 0
+                margin: 0,
+                wordWrap: 'break-word',
+                overflowWrap: 'break-word'
               }}>
                 Available Surveys
               </h1>
-              <p style={{
+              <p className="surveys-header-description" style={{
                 fontSize: '0.875rem',
                 color: '#6b7280',
-                margin: 0
+                margin: 0,
+                wordWrap: 'break-word',
+                overflowWrap: 'break-word'
               }}>
                 Take surveys and share your feedback
               </p>
